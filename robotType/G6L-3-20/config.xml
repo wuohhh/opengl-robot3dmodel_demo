@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RobotMsg>
+	<RobotType>G6L</RobotType>
+	<ConnectService>
+		<productSecret>7ghFdKh5NsdoACO9hLRKMQTnudNIK0b7</productSecret>
+	</ConnectService>
+	<Feature>
+		<DHpara>
+			<j0>0,0,164.3,0,0</j0>
+			<j1>1.570796,0,0,1.570796,0</j1>
+			<j2>0,874.2,0,0,0</j2>
+			<j3>0,819.8,146.6,-1.570796,0</j3>
+			<j4>-1.570796,0,106,0,0</j4>
+			<j5>1.570796,0,102.6,0,0</j5>
+		</DHpara>
+	</Feature>
+	<ParaRange>
+		<payloadRange dataType="double">
+			<minVal>0</minVal>
+			<maxVal>8.0</maxVal>
+		</payloadRange>
+		<jointAngleRange dataType="axis6">
+			<minVal>{-360.0,-360.0,-165.0,-360.0,-360.0,-360.0}</minVal>
+			<maxVal>{360.0,360.0,165.0,360.0,360.0,360.0}</maxVal>
+		</jointAngleRange>
+		<jointMaxSpeedRange dataType="axis6">
+			<minVal>{1,1,1,1,1,1}</minVal>
+			<maxVal>{150.0,150.0,210.0,360.0,360.0,360.0}</maxVal>
+		</jointMaxSpeedRange>
+		<tcpMaxSpeedRange dataType="double">
+			<minVal>0</minVal>
+			<maxVal>4000.0</maxVal>
+		</tcpMaxSpeedRange>
+		<tcpMaxAccelerationRange dataType="double">
+			<minVal>0</minVal>
+			<maxVal>20000.0</maxVal>
+		</tcpMaxAccelerationRange>
+	</ParaRange>
+	<PackageJointPose>{-90,0,158,22,0,0}</PackageJointPose>
+</RobotMsg>

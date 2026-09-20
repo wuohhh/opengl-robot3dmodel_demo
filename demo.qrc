@@ -1,0 +1,30 @@
+<RCC>
+    <qresource prefix="/">
+        <file>shaders/line_fragment_shader.glsl</file>
+        <file>shaders/line_vertex_shader.glsl</file>
+        <file>shaders/plane_fragment_shader.glsl</file>
+        <file>shaders/plane_vertex_shader.glsl</file>
+        <file>shaders/robot_fragment_shader.glsl</file>
+        <file>shaders/robot_vertex_shader.glsl</file>
+        <file>shaders/substance_fragment_shader.glsl</file>
+        <file>shaders/substance_vertex_shader.glsl</file>
+
+        <file>resource/image/zoomin.png</file>
+        <file>resource/image/zoomout.png</file>
+        <file>resource/image/recovery3d.png</file>
+        <file>resource/image/R_T_change.png</file>
+        <file>resource/image/T_R_change.png</file>
+        <file>resource/image/end_tool_hide.png</file>
+        <file>resource/image/end_tool_show.png</file>
+        <file>resource/image/machineBase_checked.png</file>
+        <file>resource/image/machineBase_unchecked.png</file>
+        <file>resource/image/targetPose_checked.png</file>
+        <file>resource/image/targetPose_unchecked.png</file>
+        <file>resource/image/currentPose_checked.png</file>
+        <file>resource/image/currentPose_unchecked.png</file>
+        <file>resource/image/waypointPose_checked.png</file>
+        <file>resource/image/waypointPose_unchecked.png</file>
+        <file>resource/image/pathCurve_checked.png</file>
+        <file>resource/image/pathCurve_unchecked.png</file>
+    </qresource>
+</RCC>

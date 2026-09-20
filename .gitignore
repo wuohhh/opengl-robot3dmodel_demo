@@ -1,0 +1,12 @@
+# 构建产物与运行目录不纳入版本管理
+build/
+run/
+
+# 移植过程中的中间输出
+*.o
+*.obj
+Makefile
+Makefile.*
+.qmake.stash
+.moc/
+.rcc/
