@@ -45,6 +45,11 @@
 
 ## L1 渲染底座：`BaseGeometry` —— 整套渲染的"最小公分母"
 
+> 📄 **本层的代码级详解见 [`L1-渲染底座-BaseGeometry-代码详解.md`](L1-渲染底座-BaseGeometry-代码详解.md)**
+> —— 逐行拆 `basegeometry.cpp` 的 6 个要点、三种 VBO 上传策略的判据与代价、
+> `VertexData` 的 36 字节布局与 attribute 字节偏移、着色器 uniform 契约、
+> GL 全局状态泄漏、以及 11 项细节问题清单。下面只给结论摘要。
+
 ### 1.1 它定义了什么
 
 `basegeometry.h` 一个头文件同时承担了四件事，是理解整个模块的钥匙：
