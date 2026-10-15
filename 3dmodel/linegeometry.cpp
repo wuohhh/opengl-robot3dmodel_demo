@@ -30,65 +30,18 @@ LineGeometry::~LineGeometry()
 
 void LineGeometry::SetLineData(QVector3D startPt, QVector3D endPt)
 {
-    GenerateLineData(startPt, endPt);
-    num_vertex_data = vertex_data.size();
-    vertex_data_Buf.bind();
-    if(g_openglVersion>2)
-    {
-        auto ptrVertex=vertex_data_Buf.map(QOpenGLBuffer::WriteOnly);
-        memcpy(ptrVertex,vertex_data.data(),sizeof(FeatureVertexData)*num_vertex_data);
-        vertex_data_Buf.unmap();
-        vertex_data_Buf.release();
-    }
-    else
-    {
-        vertex_data_Buf.allocate(vertex_data.data(), num_vertex_data * sizeof(FeatureVertexData));
-    }
-
-
+    lineMsg.startPt=startPt; lineMsg.endPt=endPt;
+    GenerateLineData(startPt,endPt); uploadVertices();
 }
 
 void LineGeometry::SetLineData(QVector<QVector3D> points)         //绘制线的顶点数不再增删，只修改线段组成的顶点
 {
-    GenerateLinesData(points);
-    num_vertex_data = vertex_data.size();
-    vertex_data_Buf.bind();
-    if(g_openglVersion>2)
-    {
-        auto ptrVertex=vertex_data_Buf.map(QOpenGLBuffer::WriteOnly);
-        memcpy(ptrVertex,vertex_data.data(),sizeof(FeatureVertexData)*num_vertex_data);
-        vertex_data_Buf.unmap();
-        vertex_data_Buf.release();
-    }
-    else
-    {
-        vertex_data_Buf.allocate(vertex_data.data(), num_vertex_data * sizeof(FeatureVertexData));
-    }
+    pointList=points; GenerateLinesData(points); uploadVertices();
 }
 
 void LineGeometry::AddDeleteLineData(QVector<QVector3D> points)
 {
-    GenerateLinesData(points);
-    num_vertex_data = vertex_data.size(); 
-
-//    if(num_vertex_data>=this->maxNum)
-//    {
-//        num_vertex_data=this->maxNum;
-//    }
-    if(g_openglVersion>2)
-    {
-        vertex_data_Buf.bind();
-        auto ptrVertex = vertex_data_Buf.map(QOpenGLBuffer::WriteOnly);
-        memcpy(ptrVertex,vertex_data.data(),sizeof(FeatureVertexData)*num_vertex_data);
-        vertex_data_Buf.unmap();
-    }
-    else
-    {
-        vertex_data_Buf.destroy();
-        vertex_data_Buf.create();
-        vertex_data_Buf.bind();
-        vertex_data_Buf.allocate(vertex_data.data(), num_vertex_data * sizeof(FeatureVertexData));
-    }
+    pointList=points; GenerateLinesData(points); uploadVertices();
 }
 
 bool LineGeometry::initShaders()

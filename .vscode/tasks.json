@@ -334,6 +334,174 @@
             },
             "dependsOn": "Qt 5.9.9 MSVC2015 x64: Build Release",
             "dependsOrder": "sequence"
+        },
+        {
+            "label": "VTK comparison: Build Release",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/qt-msvc.ps1",
+                "-Configuration",
+                "Release",
+                "-Action",
+                "Build",
+                "-WithVTK"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                {
+                    "base": "$msCompile",
+                    "fileLocation": [
+                        "autoDetect",
+                        "${workspaceFolder}"
+                    ]
+                }
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "VTK comparison: Run Release",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/qt-msvc.ps1",
+                "-Configuration",
+                "Release",
+                "-Action",
+                "Run",
+                "-WithVTK"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "dependsOn": "VTK comparison: Build Release",
+            "dependsOrder": "sequence"
+        },
+        {
+            "label": "VTK dependency: Build Release",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/tools/build-vtk.ps1",
+                "-Configuration",
+                "Release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "VTK comparison: Build Debug",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/qt-msvc.ps1",
+                "-Configuration",
+                "Debug",
+                "-Action",
+                "Build",
+                "-WithVTK"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                {
+                    "base": "$msCompile",
+                    "fileLocation": [
+                        "autoDetect",
+                        "${workspaceFolder}"
+                    ]
+                }
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "VTK comparison: Run Debug",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/qt-msvc.ps1",
+                "-Configuration",
+                "Debug",
+                "-Action",
+                "Run",
+                "-WithVTK"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "dependsOn": "VTK comparison: Build Debug",
+            "dependsOrder": "sequence"
+        },
+        {
+            "label": "VTK dependency: Build Debug",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/tools/build-vtk.ps1",
+                "-Configuration",
+                "Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
         }
     ]
 }

@@ -1,14 +1,15 @@
 ﻿#ifndef ROBOTGEOMETRY_H
 #define ROBOTGEOMETRY_H
 
-#include"assimp/Importer.hpp"
-#include"assimp/scene.h"
-#include"assimp/postprocess.h"
+
+
+
 
 #include"basegeometry.h"
-#include "demo_support.h"
+#include "robot3d/domain/RobotTypes.h"
+typedef robot3d::domain::DHParameter WholeDH;
 
-extern int showEndToolStatus; //是否显示末端工件，0-不显示，1-显示，默认0
+
 
 class RobotGeometry :  public QOpenGLFunctions
 {    
@@ -23,7 +24,8 @@ public:
     void CalRobotViewTargetPos();
     void MatrixMultiVector3D(float *matrix4x4,float *vector3d, QVector3D &result);
 
-    void ChangeRobot3D(QString name,WholeDH stdRobotWholeDH[6]);
+    bool ChangeRobot3D(QString directory,const WholeDH stdRobotWholeDH[6]);
+    void setEndWorkpieceVisible(bool visible) { endWorkpieceVisible_=visible; }
 
 
     int numJoints;       //关节数
@@ -39,6 +41,9 @@ public:
     void set_rotate_center(QVector3D &rotate_center);
 
 private:
+    void clearMesh();
+    int m_glMajor=2;
+    bool endWorkpieceVisible_=false;
 //    QVector<QVector<MeshEntry>> m_Entries;  //每个模型文件可能有多个mesh
 //    QVector<QVector<MeshEntry>> Entries;    //每个模型文件数据备份
 

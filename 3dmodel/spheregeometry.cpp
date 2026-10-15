@@ -33,69 +33,19 @@ SphereGeometry::~SphereGeometry()
 
 void SphereGeometry::SetSphereData(QVector<SphereMsg> sphereMsgsIn)
 {
-    if(sphereMsgsIn.count()>0)
-     {
-         this->sphereMsg=sphereMsgsIn[0];
-     }
-    GenerateSpheresData(sphereMsgsIn);
-    num_vertex_data = vertex_data.size();
-    vertex_data_Buf.bind();
-    if(g_openglVersion>2)
-    {
-      auto ptrVertex=vertex_data_Buf.map(QOpenGLBuffer::WriteOnly);
-      memcpy(ptrVertex,vertex_data.data(),sizeof(FeatureVertexData)*num_vertex_data);
-      vertex_data_Buf.unmap();
-      vertex_data_Buf.release();
-     }
-    else
-    {
-       vertex_data_Buf.allocate(vertex_data.data(), num_vertex_data * sizeof(FeatureVertexData));
-    }
-
+    if(!sphereMsgsIn.isEmpty()) sphereMsg=sphereMsgsIn[0];
+    GenerateSpheresData(sphereMsgsIn); uploadVertices();
 }
 
 void SphereGeometry::SetSphereData(QVector3D center,float radius)
 {
-
-    GenerateSphereData(center,radius);
-    num_vertex_data = vertex_data.size();
-    vertex_data_Buf.bind();
-    if(g_openglVersion>2)
-    {
-        auto ptrVertex=vertex_data_Buf.map(QOpenGLBuffer::WriteOnly);
-        memcpy(ptrVertex,vertex_data.data(),sizeof(FeatureVertexData)*num_vertex_data);
-        vertex_data_Buf.unmap();
-        vertex_data_Buf.release();
-    }
-    else
-    {
-        vertex_data_Buf.allocate(vertex_data.data(), num_vertex_data * sizeof(FeatureVertexData));
-    }
+    sphereMsg.center=center; sphereMsg.radius=radius;
+    GenerateSphereData(center,radius); uploadVertices();
 }
 
 void SphereGeometry::AddDeleteSphereData(QVector<SphereMsg> sphereMsgsIn)
 {
-    if(sphereMsgsIn.count()>0)
-    {
-        this->sphereMsg=sphereMsgsIn[0];
-    }
-    GenerateSpheresData(sphereMsgsIn);
-    num_vertex_data = vertex_data.size();
-    if(g_openglVersion>2)
-    {
-        vertex_data_Buf.bind();
-        auto ptrVertex = vertex_data_Buf.map(QOpenGLBuffer::WriteOnly);
-        memcpy(ptrVertex,vertex_data.data(),sizeof(FeatureVertexData)*num_vertex_data);
-        vertex_data_Buf.unmap();
-        vertex_data_Buf.release();
-    }
-    else
-    {
-        vertex_data_Buf.destroy();
-        vertex_data_Buf.create();
-        vertex_data_Buf.bind();
-        vertex_data_Buf.allocate(vertex_data.data(), num_vertex_data * sizeof(FeatureVertexData));
-  }
+    SetSphereData(sphereMsgsIn);
 }
 
 bool SphereGeometry::initShaders()

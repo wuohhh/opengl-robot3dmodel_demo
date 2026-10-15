@@ -33,67 +33,20 @@ SubstanceGeometry::~SubstanceGeometry()
 
 void SubstanceGeometry::SetSubstanceData(QVector<SubstanceMsg> substanceMsgsIn)
 {
-    if(substanceMsgsIn.count()>0)
-     {
-         this->substanceMsg=substanceMsgsIn[0];
-     }
-    GenerateSubstancesData(substanceMsgsIn);
-    num_vertex_data = vertex_data.size();
-    vertex_data_Buf.bind();
-    if(g_openglVersion>2)
-    {
-      auto ptrVertex=vertex_data_Buf.map(QOpenGLBuffer::WriteOnly);
-      memcpy(ptrVertex,vertex_data.data(),sizeof(FeatureVertexData)*num_vertex_data);
-      vertex_data_Buf.unmap();
-      vertex_data_Buf.release();
-     }
-    else
-    {
-       vertex_data_Buf.allocate(vertex_data.data(), num_vertex_data * sizeof(FeatureVertexData));
-    }
+    if(!substanceMsgsIn.isEmpty()) substanceMsg=substanceMsgsIn[0];
+    GenerateSubstancesData(substanceMsgsIn); uploadVertices();
 }
 
 void SubstanceGeometry::SetSubstanceData(SubstanceMsg substanceMsgIn)
 {
-    GenerateSubstanceData(substanceMsgIn);
-    num_vertex_data = vertex_data.size();
-    vertex_data_Buf.bind();
-    if(g_openglVersion>2)
-    {
-        auto ptrVertex=vertex_data_Buf.map(QOpenGLBuffer::WriteOnly);
-        memcpy(ptrVertex,vertex_data.data(),sizeof(FeatureVertexData)*num_vertex_data);
-        vertex_data_Buf.unmap();
-        vertex_data_Buf.release();
-    }
-    else
-    {
-        vertex_data_Buf.allocate(vertex_data.data(), num_vertex_data * sizeof(FeatureVertexData));
-    }
+    substanceMsg=substanceMsgIn;
+    GenerateSubstanceData(substanceMsgIn); uploadVertices();
 }
 
 void SubstanceGeometry::AddDeleteSubstanceData(QVector<SubstanceMsg> substanceMsgsIn)
 {
-    if(substanceMsgsIn.count()>0)
-    {
-        this->substanceMsg=substanceMsgsIn[0];
-    }
-    GenerateSubstancesData(substanceMsgsIn);
-    num_vertex_data = vertex_data.size();
-    if(g_openglVersion>2)
-    {
-        vertex_data_Buf.bind();
-        auto ptrVertex = vertex_data_Buf.map(QOpenGLBuffer::WriteOnly);
-        memcpy(ptrVertex,vertex_data.data(),sizeof(FeatureVertexData)*num_vertex_data);
-        vertex_data_Buf.unmap();
-        vertex_data_Buf.release();
-    }
-    else
-    {
-        vertex_data_Buf.destroy();
-        vertex_data_Buf.create();
-        vertex_data_Buf.bind();
-        vertex_data_Buf.allocate(vertex_data.data(), num_vertex_data * sizeof(FeatureVertexData));
-  }
+    if(!substanceMsgsIn.isEmpty()) substanceMsg=substanceMsgsIn[0];
+    GenerateSubstancesData(substanceMsgsIn); uploadVertices();
 }
 
 bool SubstanceGeometry::initShaders()

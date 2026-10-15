@@ -1,245 +1,116 @@
-# 机械臂 3D 显示模块 —— 独立移植 Demo
+# 机械臂 3D 显示 Demo：MVP 分层实现
 
-> 当前 Windows 构建入口：**Qt 5.9.9 + MSVC2015 x64 + CMake**。
-> VS Code 的 Debug / Release 编译、运行、调试说明见 [.vscode/README.md](.vscode/README.md)。
+本工程从示教器 `CGX-TP` 的三维显示模块移植而来，现已采用 MVP、应用服务、领域计算和独立渲染模块进行分层。窗口与资源继续使用 Qt Widgets、OpenGL 和 Assimp。
 
-> 从示教器项目 `CGX-TP` 中把「机械臂 3D 模型显示」相关代码完整剥离出来，做成一个
-> **可独立编译、可运行、自包含** 的 Qt 工程。
-> 本目录既是移植成果，也是后续往其它项目移植的**参考实现与操作说明**。
+当前工具链：**Qt 5.9.9 + MSVC2015 v140 x64 + C++11 + CMake 3.20+**。
 
----
+## 文档入口
 
-> 📖 **想理解 `3dmodel/` 内部的代码结构**：见
-> [`docs/3dmodel-功能层级说明.md`](docs/3dmodel-功能层级说明.md) ——
-> 按功能层级（L1 渲染底座 → L2 几何图元 → L3 机械臂模型 → L4 渲染控制总线 →
-> L5 控制面板 → L6 对外接口 → L7 移植适配层 → L8 驱动外壳）逐层拆解，
-> 含一帧数据流、单位约定速查表与改动索引。
+- [OpenGL / VTK 双渲染后端](docs/VTK双渲染后端使用说明.md)：依赖构建、界面切换与效果验证。
 
----
+- [MVP 分层架构设计与重构指南](docs/MVP分层架构设计与重构指南.md)：职责、依赖、数据契约、迁移规划及新功能开发约定；第 17 节给出已落地实现。
+- [MVP 重构实施记录](docs/MVP重构实施记录.md)：实际目录、调用链、兼容边界和验证方式。
+- [构建与调试配置](.vscode/README.md)：VS Code 任务、Debug/Release、工作目录与本机依赖。
+- [原始移植说明](docs/原始移植说明.md)：重构前的依赖分析与移植历史。
+- [原代码功能层级说明](docs/3dmodel-功能层级说明.md)与 [BaseGeometry 详解](docs/L1-渲染底座-BaseGeometry-代码详解.md)：理解原几何实现时的历史参考；部分函数已迁移或替换。
 
-## 一、可行性结论
+## 已有功能
 
-**结论：可以完整移植**，但原代码有 6 处对外部模块的硬依赖，必须替换（已在 `3dmodel/demo_support.h` 中全部解决）：
+- 加载 G6L-3-20、G6-1-1、X20-1-3 模型；切换前准备配置、网格和着色器，失败保留原状态与场景。
+- 六轴关节滑条、归零、正运动学 TCP 数值与三维显示。
+- 每 40 ms 推进一次正弦模拟；模拟时间属于服务实例，可以重复验证。
+- 基座、工具、用户及工件坐标系选择；侧栏与视口叠加面板按 ID 同步。
+- 视角旋转/平移/缩放、路点与轨迹显示开关、工具与末端工件分别控制。
+- 导出初始帧、固定步数模拟后的帧及对应 JSON 状态快照。
 
-| 原依赖 | 原位置 | 性质 | 移植方案 |
-|---|---|---|---|
-| `CommDataController` | `commu/commdatacontroller.h` | 全局数据中枢单例（机器人类型/DH/关节角/位姿/坐标系/Jog 参数/信号） | 用 `DemoDataHub` 单例等价实现；通过 `#define CommDataController DemoDataHub` 让业务代码零改动 |
-| `RobotConfig` | `robotconfig/robotconfig.h` | 坐标系/TCP/安装姿态配置（依赖链极大：instruct、varconfig、safetyconfig…） | 只重建 3D 模块真正用到的 11 个接口 |
-| `SoftwareUI_Controller` | `base/softwareui_controller.h` | 机型切换通知信号 | 最小单例 + `ChangeRobotType_signal()` |
-| `RamMonotorThread` | `commu/rammonitorthread.h` | 内存保护中断 | 桩实现，`MemoryCheck()` 恒返回 false |
-| `tpAlgApp` 算法库 | `robotAlgorithm/tpAlgApp/libs/win32/tpAlgApp.lib` | **纯 MSVC 预编译库**，MinGW 无法链接 | 按相同接口与语义用标准 C++ 重写（见 `demo_support.cpp`） |
-| `UserPushButton` / `EXJointPose` | `base/userpushbutton.h`、`base/basedefine.h` | 自定义按钮与扩展轴位姿 | 按 3D 模块用到的接口重建 |
+路点、轨迹和工具数据可经应用入口或旧宿主适配入口提供；本次重构未接入真实机器人 SDK。已有旋转显示约定通过命名明确的适配类型保留，数学语义的后续核对见架构指南第 7 节。
 
-其中**算法库是最关键的一道坎**：`cr_PoseTrans` / `cr_PoseInv` / `cr_ForwardKineFull` 在原项目里
-只是对 `tp_*` 函数的封装，而 `tpAlgApp` 只提供 `.dll/.lib`（MSVC ABI），跨编译器不可复用。
-本 Demo 用标准 DH 参数模型重新实现了运动学正解与位姿变换，**不依赖任何预编译库**。
-
----
-
-## 二、目录结构
-
-```
-demo/
-├── 3dmodel/                  ← 从原项目 move3D/model3D 移植的源码（业务逻辑基本未改）
-│   ├── robot3dglwidget.h/.cpp        3D 渲染主控件（QOpenGLWidget，1322 行）
-│   ├── robot3dcontrolwidget.h/.cpp   单例入口 + 长按 jog 过滤器
-│   ├── robotgeometry.h/.cpp          机械臂模型：assimp 加载 obj、关节链变换、绘制
-│   ├── basegeometry.h/.cpp           几何基类与数据结构（G_SCALE=0.04 等）
-│   ├── linegeometry.h/.cpp           坐标系轴、路点轨迹线
-│   ├── spheregeometry.h/.cpp         TCP 球、路点球
-│   ├── planegeometry.h/.cpp          安全限制平面
-│   ├── substancegeometry.h/.cpp      末端工具（球/锥/柱/方体）
-│   ├── demo_support.h                ★ 移植适配层（替代上述 6 项外部依赖）
-│   └── demo_support.cpp              ★ 运动学算法 + 数据中枢 + 配置单例实现
-├── shaders/                  8 个 GLSL（经 demo.qrc 编入资源）
-├── resource/image/           3D 控件用到的 17 个图标（经 demo.qrc 编入资源）
-├── robotType/                机型模型：G6L-3-20 / G6-1-1 / X20-1-3
-│   └── <机型>/model3d/*.obj + *.mtl，以及 config.xml（DH 参数来源）
-├── assimp/include/           assimp 头文件
-├── assimp/MSVC2015_64/       当前使用的 Assimp x64 导入库与 DLL
-├── assimp/lib/libassimp.dll.a  历史 MinGW 32 位导入库（当前配置不使用）
-├── bin/libassimp.dll         历史 MinGW 32 位运行库（当前配置不使用）
-├── demoui.h/.cpp             Demo 外壳界面（机型切换/关节滑条/运动模拟/显示项开关）
-├── main.cpp                  入口（含 demo_debug.log 日志）
-├── demo.qrc                  资源清单
-├── CMakeLists.txt            ★ Qt 5.9.9 / MSVC2015 x64 构建入口
-└── .vscode/                  ★ Debug / Release 任务、调试配置与使用说明
-```
-
----
-
-## 三、快速开始
-
-在 VS Code 中打开项目根目录，安装 Microsoft C/C++ 扩展：
-
-- **Ctrl+Shift+B**：默认构建 Debug；生成任务中也可选择 Build Release。
-- **F5**：选择 Debug 或 Release 调试，启动前自动构建。
-- **Ctrl+F5**：运行所选配置，不附加调试器。
-- “终端 → 运行任务”提供对应的 Run、Rebuild、Clean、Configure 任务。
-
-构建环境：**Qt 5.9.9 MSVC2015 64 位**、**Visual Studio 2015 v140 x64**、**CMake 3.20+**、**JOM**。
-任务脚本自动导入 VS2015 amd64 环境，不要求从开发者命令行启动 VS Code。
-
-两种版本的程序与 PDB 分别输出到：
+## 目录与依赖
 
 ```text
-build/vscode-qt5.9.9-msvc2015_64/Debug/bin/
-build/vscode-qt5.9.9-msvc2015_64/Release/bin/
+include/robot3d/
+  core/             Result
+  domain/           RobotTypes、Kinematics、TrajectorySampler
+  ports/            IRobotConfigRepository
+  application/      Robot3dService、SimulationService
+  scene/            RobotSceneSnapshot、RobotDisplayOptions
+  presentation/     IRobot3dView、Robot3dPresenter
+  infrastructure/   XmlRobotConfigRepository
+  rendering/        RobotSceneRenderer、RobotMeshLoader、CameraState
+  composition/      Robot3dComposition
+src/robot3d/         上述模块实现
+3dmodel/            保留路径的 Geometry、GL 视口与兼容门面
+main.cpp            QApplication 及日志入口
+demoui.h/.cpp       具体 View，负责布局、输入和显示
+tests/              应用/Presenter 与真实 OpenGL 集成回归
+robotType/          三种机型配置和 OBJ/MTL
+shaders/、resource/ 由 demo.qrc 部署的着色器与图标
 ```
 
-运行工作目录统一为 `build/vscode-qt5.9.9-msvc2015_64`；构建会自动复制 `robotType/`。
-详细工具链路径、命令行用法、依赖说明见 [.vscode/README.md](.vscode/README.md)。
+主要数据流：
 
----
-
-## 四、实际改动清单（相对原代码）
-
-移植遵循「**尽量不动业务代码**」原则：只改写 include，其余改动集中在适配层。
-下面是**对原 `3dmodel/` 源文件**的全部改动（共 4 类）：
-
-| # | 文件 | 位置 | 改动 | 原因 |
-|---|---|---|---|---|
-| 1 | `robot3dglwidget.cpp` `robot3dglwidget.h` `robotgeometry.cpp` `robotgeometry.h` `robot3dcontrolwidget.cpp` | 头部 | 10 行 `#include` 指向 `demo_support.h` | 依赖剥离 |
-| 2 | `robot3dcontrolwidget.cpp` | `touchEndEvent()` | `WarningLevel::WARNING` → `WarningLevel::LV_WARNING` | 避免与 `windows.h` 的 `ERROR` 宏冲突（该头经 `qopengl.h` 间接引入） |
-| 3 | `robotgeometry.cpp` | 头部 | 补 `#include <QFileInfo>` | 原项目由 `basedefine.h` 间接引入，`demo_support.h` 不再连带 |
-| 4 | `robot3dglwidget.cpp` | `initializeGL()` / `SetRobotToolPosition_slot()` | TCP 球心坐标 `* G_SCALE` | **修 bug**：见下文第六节 |
-
-其余全部逻辑（渲染管线、关节链变换、光照、交互、坐标系切换、路点/轨迹/安全平面/工具显示）**保持原样**。
-
----
-
-## 五、适配层设计要点
-
-`demo_support.h/.cpp` 用一个文件提供原项目 5 个头文件的全部内容：
-
-```cpp
-// 3dmodel/ 下的源文件只需把
-#include"commu/commdatacontroller.h"      // 改为
-#include "demo_support.h"
+```text
+View 的操作意图 → Presenter → Robot3dService / SimulationService
+                                    ↓
+                           一致的机器人状态快照
+                                    ↓
+                      Presenter → 数值展示 + 场景快照
+                                    ↓
+                  View → 有效 GL 上下文中的 Renderer
 ```
 
-* **类名兼容**：`#define CommDataController DemoDataHub`，业务代码继续书写
-  `CommDataController::GetInstance()->currentJointPose`，无需改名。
-* **数据成员同名**：`robotType.robotTypeParaStr`、`stdRobotWholeDH[6]`、`currentJointPose`、
-  `currentPose`、`baseInWorldPose`、`curJogPara.{coordSysID,tcpID,tcpOffset}`、
-  `curTcpInCoordSysMsg.coordSysTcpPara.{coordSysType,coordinateId}`、`updateRealtimeRobot3dMsgSignal`
-  等，与原项目字段名逐一对应。
-* **运动学重写**（`demo_support.cpp`）：
-  * `cr_ForwardKineFull()`：标准 DH 变换 `T = RotZ(θ)·TransZ(d)·TransX(a)·RotX(α)` 连乘，关节角为**度**；
-  * `cr_PoseTrans()`：`result = Pose2⁻¹ · Pose1`；
-  * `cr_PoseInv()`：位姿求逆；
-  * 旋转约定与控件内 `Euler2RotateMatrix()` 一致：`R = Rz·Ry·Rx`。
+CMake 分别构建 `robot3d_core`、`robot3d_infrastructure`、`robot3d_presentation`、`robot3d_rendering`、`robot3d_shell`，并通过 `robot3d_scene` 共享场景契约。领域/应用目标不依赖 Qt、Widgets、OpenGL 或 Assimp。
 
----
+## 编译与运行
 
-## 六、移植中发现的原项目问题（建议回查）
+VS Code 中按 **Ctrl+Shift+B** 构建 Debug，按 **F5** 调试；Release 可从任务与调试配置中选择。
 
-### 1. TCP 球坐标单位不一致（已在 Demo 中修正）
+从工程根目录运行：
 
-`spheregeometry.cpp::GenerateSphereData()` 内部对 `center` 与 `radius` 都乘了 `G_SCALE`：
-
-```cpp
-temp0.position = QVector3D(x0,y0,z0) * G_SCALE;   // center 和 radius 都被缩放
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .vscode/qt-msvc.ps1 -Configuration Debug -Action Build
+powershell -NoProfile -ExecutionPolicy Bypass -File .vscode/qt-msvc.ps1 -Configuration Release -Action Build
+powershell -NoProfile -ExecutionPolicy Bypass -File .vscode/qt-msvc.ps1 -Configuration Debug -Action Run
 ```
 
-而 `robot3dglwidget::initializeGL()` / `SetRobotToolPosition_slot()` 传入的是**毫米单位**的位姿
-（`tmpPose` 来自正解，单位 mm），并没有乘 `G_SCALE`。模型顶点在 `LoadMesh()` 里已经缩放过，
-于是 TCP 球会跑到偏移约 `1/0.04 = 25` 倍的位置——本 Demo 首次运行时该球确实出现在画面外。
+脚本自动导入 VS2015 amd64 编译环境，部署模型与 Assimp DLL。输出位置：
 
-Demo 的处理：在**传参侧**同步乘 `G_SCALE`（`robot3dglwidget.cpp` 两处，含 `[demo 适配]` 注释）。
-修正后 TCP 球精确落在末端法兰处（已用像素分析验证）。
-
-> 建议：在原示教器中确认该现象是否存在。若存在，同样的两行改动即可修复。
-
-### 2. shader 文件不能带 UTF-8 BOM
-
-GLSL 编译器会报 `illegal non-ASCII character (0xef/0xbb/0xbf)`，着色器全部编译失败 → 3D 全黑。
-原项目 `shaders/*.glsl` 为无 BOM，移植时若用带 BOM 的方式重写就会踩坑（本 Demo 踩过并已修正）。
-
-### 3. 初始化顺序有强约束
-
-`RobotGeometry` 的**构造函数里**就会调用 `ChangeRobot3D()` 去读
-`robotType/<机型>/model3d/*.obj` 和 `stdRobotWholeDH`。因此必须：
-
-```
-① DemoDataHub::LoadRobotType()  →  ② Robot3dControlWidget::InitInstance()
-→ ③ GetRobot3dGLWidget() 并加入布局  →  ④ 首次显示触发 initializeGL()  →  ⑤ 才可调用 Update*
+```text
+build/vscode-qt5.9.9-msvc2015_64/Debug/bin/robot3ddemo.exe
+build/vscode-qt5.9.9-msvc2015_64/Release/bin/robot3ddemo.exe
 ```
 
-在 `initializeGL()` 之前调用 `UpdateRobot3dJointAngle()` / `UpdateRobot3dToolPosition()`
-会因为 `robotGeometry` / `TCP_Geometry` 仍为空指针而崩溃（Demo 用 `QTimer::singleShot` 延迟到窗口显示后触发）。
+Run/F5 的工作目录为 `build/vscode-qt5.9.9-msvc2015_64`，包含部署的 `robotType/`。直接启动程序时也需保证该相对目录存在。运行日志为工作目录中的 `demo_debug.log`。
 
-### 4. 模型路径依赖工作目录
+本机运行配置保留 `QT_DISABLE_SHADER_DISK_CACHE=1`。Assimp 使用项目随附的 `assimp/MSVC2015_64/assimp-vc130-mt.lib/.dll`；其文件名为历史名称，当前包为 MSVC2015 x64。网格加载使用 C 字符串入口，兼容 Release Assimp DLL 与 Debug 主程序的运行库模式。
 
-`ChangeRobot3D()` 使用 `QString appPath = "./"`，即模型按**相对可执行文件工作目录**查找。
-因此运行目录下必须有 `robotType/`（`build.bat` 会自动复制）。
+## 回归验证
 
----
+默认构建两个独立测试目标，可用 CMake 选项 `ROBOT3D_BUILD_TESTS=OFF` 关闭。测试不依赖真实机器人。
 
-## 七、早期移植验证结果（MinGW 版本历史记录）
-
-| 项目 | 结果 |
-|---|---|
-| 编译 | `mingw32-make` 成功，`robot3ddemo.exe` 291 KB，无 error |
-| 依赖链接 | assimp（MinGW 导入库）链接成功，`libassimp.dll` 正常加载 |
-| 启动 | 进程稳定运行（约 130 MB 工作集），窗口与全部 Qt 控件正常 |
-| **模型渲染** | **六轴机械臂 6 个部件 + RGB 坐标系正确渲染** |
-| 机型配置 | `config.xml` 中 6 段 DH 参数解析成功（alog：`载入机型 "G6L-3-20" DH 段数: 6`） |
-| **关节联动** | 推进 90 步模拟后，大臂前倾、小臂弯曲，姿态随关节角正确变化 |
-| TCP 点 | 缩放修正后落在末端法兰，与正解位姿一致 |
-| 着色器 | 8 个 GLSL 全部编译链接成功（`demo_debug.log` 无 shader 报错） |
-
-验证日志与截图为临时输出，可用下方命令重新生成。
-
-复现命令：
-
-```bat
-cd build\vscode-qt5.9.9-msvc2015_64
-set PATH=C:\Qt\Qt5.9.9\5.9.9\msvc2015_64\bin;%PATH%
-set DEMO_DUMP_START=frame_start.png
-set DEMO_DUMP_FRAME=frame_sim.png
-set DEMO_DUMP_SIMSTEPS=90
-Release\bin\robot3ddemo.exe
+```powershell
+& 'C:\CMake\bin\ctest.exe' --test-dir build/vscode-qt5.9.9-msvc2015_64/Debug --output-on-failure
+& 'C:\CMake\bin\ctest.exe' --test-dir build/vscode-qt5.9.9-msvc2015_64/Release --output-on-failure
 ```
 
-（三个环境变量用于无人值守验证：先存初始帧 → 推进 n 步模拟 → 存结果帧 → 自动退出。）
+- `robot3d_mvp`：三机型独立正解期望值、配置错误、无效输入、状态原子更新、坐标系、轨迹、模型准备失败及展示同步。
+- `robot3d_gui`：实际 OpenGL 首帧、滑条与模拟、双向控件同步、连续切换、缺失网格时保留场景、动态工具/路点/轨迹、隐藏后显示、关闭重建和兼容门面销毁。
 
----
+GUI 回归需要可用的 Windows 桌面 OpenGL 环境。帧和窗口截图位于各配置目录的 `mvp-gui-validation/`。
 
-## 八、移植到其它项目的操作步骤
+保留的导帧变量：
 
-1. **拷贝文件**：`3dmodel/`（含 `demo_support.*`）、`shaders/`、`resource/image/` 中的 17 个图标、
-   `assimp/`（头文件 + 对应平台的导入库）、目标机型目录 `robotType/<机型>/`。
-2. **改 include**：把 `3dmodel/` 里 5 个源文件头部对原项目路径的 include 换成 `#include "demo_support.h"`。
-3. **接数据源**：把 `DemoDataHub` 换成目标项目自己的数据单例——二选一：
-   * 改 `#define CommDataController <你的单例类名>`；
-   * 或保留 `DemoDataHub` 名字，在其 setter 里桥接到目标项目的实时数据。
-   需要提供的数据见第五节字段清单。
-4. **配资源**：把 shader 与图标加入 `.qrc`；把 `robotType/` 放到运行目录。
-5. **配工程**：参考 `CMakeLists.txt` 查找 Qt 模块，加入源码和 `.qrc`，并配置目标平台对应的 Assimp 导入库、头文件及 DLL。
-6. **按约束初始化**：遵守第六节第 3 条的 ①→⑤ 顺序。
+| 变量 | 用途 |
+| --- | --- |
+| `DEMO_DUMP_FRAME` | 最终 PNG 路径，成功后退出；另写同名 `.png.json` 状态快照 |
+| `DEMO_DUMP_START` | 可选，初始 PNG 路径 |
+| `DEMO_DUMP_SIMSTEPS` | 导出前推进的模拟步数，每步 0.04 秒，范围 0～10000 |
+| `DEMO_ROBOT_TYPE` | 可选，启动机型 ID，默认 G6L-3-20 |
 
----
+程序根据渲染就绪及已应用快照导帧，不再依赖固定的 120/900 ms 初始化延时。模拟速度字段为演示数据。
 
-## 九、已知限制
+## 扩展功能
 
-* 运动学为**自实现**，只覆盖显示所需的正解与位姿变换；不含逆解、轨迹规划、标定等
-  （原项目这些来自 `tpAlgApp`，如需可单独链接该库或另行移植）。
-* 涉及业务逻辑的部分被合理降级为桩：`TipMsgDialog` 改为日志输出、`RamMonotorThread` 恒不拦截、
-  长按 jog 的"未使能"警告按原样保留但不真正弹窗。
-* Demo 只带了 3 个机型（`G6L-3-20` / `G6-1-1` / `X20-1-3`，共约 1.1 MB），
-  需要更多机型时把对应目录拷进 `demo/robotType/` 即可（无需改代码，下拉框加一项即可）。
-* `demo_support.h` 中的枚举（`CRData__RobotModes`、`CRData__LuaScriptStatus`、`CRService__MoveType`）
-  取值取自原项目 protobuf 生成头，只包含本模块用到的项。
+先在 domain/application 定义状态与用例，再由 Presenter 协调，View 仅处理输入与显示；文件/设备依赖通过 ports 接口接入，GPU 对象由 Renderer 独占。
 
----
-
-## 附：VS Code 代码导航与构建配置
-
-当前工程使用 `CMakeLists.txt` 和 `.vscode/` 中的 MSVC2015 x64 配置，旧 qmake / MinGW 构建脚本与工程文件已清理。
-
-`.vscode/c_cpp_properties.json` 提供 Debug / Release 两组 IntelliSense 配置，各自引用构建目录中的 `compile_commands.json`，并包含 Qt、Assimp、VC 与 Windows SDK 的头文件路径兜底。可以使用“C/C++: Select a Configuration”切换。
-
-源码列表或依赖变动后，运行对应的 Build 或 Configure 任务即可重新生成编译数据库。CMake 直接导出完整 MSVC 编译参数，不再需要响应文件展开脚本。
-
-如需重置索引，执行“C/C++: Reset IntelliSense Database”。完整操作与工具链路径见 [.vscode/README.md](.vscode/README.md)。
+旧 `Robot3dControlWidget` 仅作为宿主适配门面保留。新代码使用构造注入与 `IRobot3dView`；不再增加 `DemoDataHub::GetInstance()`、`CommDataController` 宏、对内部下拉框的跨组件访问或对 Geometry 数据成员的直接业务写入。

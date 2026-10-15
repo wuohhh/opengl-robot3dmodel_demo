@@ -75,6 +75,17 @@ CMake 使用自身的头文件依赖扫描，避免中文版 VS2015 的 `/showIn
 
 本机已验证 Debug / Release 编译、PDB 生成、Run 任务启动、模型渲染、90 步关节模拟、PNG 帧导出及正常退出；Windows CDB 调试器均命中 `main.cpp:45`，并确认载入对应版本的 Qt 和 Windows 平台插件。
 
-文件存储状态：新增的 `.vscode` 配置和 MSVC 依赖副本为明文；`CMakeLists.txt` 由白名单 Python 写入后保持加密，已确认 CMake 可正常读取。业务源码和原资源不作改写。`.gitignore` 额外允许 `robotType/**/*.obj`，防止把机器人模型误当编译目标文件忽略。
+文件存储状态：新增的 `.vscode` 配置和 MSVC 依赖副本为明文；`CMakeLists.txt` 由白名单 Python 写入后保持加密，已确认 CMake 可正常读取。该项是工具链适配阶段的历史记录；后续 MVP 重构的源码与验证见 [MVP 实施记录](../docs/MVP重构实施记录.md)。`.gitignore` 额外允许 `robotType/**/*.obj`，防止把机器人模型误当编译目标文件忽略。
 
 已进一步通过 VS Code 扩展宿主执行实际调试配置（含 preLaunchTask 自动构建）：Debug 与 Release 均命中 `main.cpp:45`，断点原因为 breakpoint，源码校验开启。为避免本机 Qt/CMake 扩展后台扫描工具包时弹出选择框，工作区关闭了自动工具包扫描；其它项目和用户全局设置不变。
+
+## MVP 分层与回归
+
+当前构建将核心、基础设施、展示器、渲染和壳层编入独立库；原 Build/Run/F5 入口保持可用。默认同时生成 robot3d_mvp_tests 与 robot3d_gui_tests，可通过 CMake 的 ROBOT3D_BUILD_TESTS 选项关闭。
+
+```powershell
+& 'C:\CMake\bin\ctest.exe' --test-dir build/vscode-qt5.9.9-msvc2015_64/Debug --output-on-failure
+& 'C:\CMake\bin\ctest.exe' --test-dir build/vscode-qt5.9.9-msvc2015_64/Release --output-on-failure
+```
+
+测试截图输出在各配置的 mvp-gui-validation/，GUI 测试使用真实桌面 OpenGL，不连接机器人。

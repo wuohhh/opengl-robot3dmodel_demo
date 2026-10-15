@@ -1,195 +1,38 @@
 ﻿#include "robot3dcontrolwidget.h"
-#include "demo_support.h"
-
-Robot3dControlWidget* Robot3dControlWidget::robot3dControl_handle = NULL;
-
-Robot3dControlWidget::Robot3dControlWidget(QWidget *parent) : QWidget(parent)
-{
-    robot3dGLWidget = new Robot3dGLWidget(parent);
+#include "robot3d/presentation/Robot3dPresenter.h"
+#include <QDebug>
+#include <QTouchEvent>
+QPointer<Robot3dControlWidget> Robot3dControlWidget::instance_;
+Robot3dControlWidget::Robot3dControlWidget(QWidget* parent) : QWidget(parent) {
+    viewport_=new Robot3dGLWidget(this);
+    composition_.reset(new robot3d::composition::Robot3dComposition(*this,*this,*viewport_,"robotType"));
 }
-
-void Robot3dControlWidget::InitInstance(QWidget *parent)
-{
-    if(robot3dControl_handle == NULL)
-    {
-        robot3dControl_handle = new Robot3dControlWidget(parent);
-    }
+Robot3dControlWidget::~Robot3dControlWidget() { composition_.reset(); }
+void Robot3dControlWidget::InitInstance(QWidget* parent) { if(!instance_) instance_=new Robot3dControlWidget(parent); }
+void Robot3dControlWidget::UnInitInstance() { delete instance_.data(); instance_=nullptr; }
+Robot3dControlWidget* Robot3dControlWidget::GetInstance() { return instance_.data(); }
+Robot3dGLWidget* Robot3dControlWidget::GetRobot3dGLWidget(Robot3DShowTypes type,bool followRealtime) { Q_UNUSED(followRealtime) if(viewport_) viewport_->SetShowType(type); return viewport_.data(); }
+void Robot3dControlWidget::UpdateRobot3dJointAngle(JointPose j) { composition_->presenter().onJointPoseRequested(j); }
+void Robot3dControlWidget::UpdateRobot3dToolPosition(Pose p) { composition_->presenter().onObservedTcp(p); }
+void Robot3dControlWidget::AddRobotWaypointPath(Pose p) { composition_->presenter().onTrajectoryPoint(p,true); }
+void Robot3dControlWidget::UpdateRobot3dSafetyToolData(QVector<SubstanceMsg> tools) {
+    std::vector<robot3d::scene::ToolShape> result;
+    for(const auto& t:tools) { robot3d::scene::ToolShape s; s.type=t.substanceType;
+        s.pose={t.centerPose[0],t.centerPose[1],t.centerPose[2],t.centerPose[3],t.centerPose[4],t.centerPose[5]};
+        s.radius=t.radius; s.length=t.length; s.width=t.width; s.height=t.height; s.rgb={{t.color.red(),t.color.green(),t.color.blue()}}; result.push_back(s); }
+    composition_->presenter().onToolsRequested(result);
 }
-
-void Robot3dControlWidget::UnInitInstance()
-{
-    if(robot3dControl_handle != NULL)
-    {
-    }
+void Robot3dControlWidget::ResizeRobot3dMode() { if(viewport_) viewport_->update(); }
+bool Robot3dControlWidget::prepareModel(robot3d::domain::RobotConfigurationPtr c,std::string& e) { if(!viewport_) { e="Viewport destroyed"; return false; } return viewport_->prepareModel(c,e); }
+void Robot3dControlWidget::showState(const robot3d::presentation::Robot3dDisplayModel& m) { if(viewport_) viewport_->showState(m); }
+void Robot3dControlWidget::submitScene(const robot3d::scene::RobotSceneSnapshot& s) { if(viewport_) viewport_->submitScene(s); }
+void Robot3dControlWidget::showError(const std::string& e) { qWarning()<<QString::fromUtf8(e.c_str()); }
+void Robot3dControlWidget::appendLog(const std::string& s) { qDebug()<<QString::fromUtf8(s.c_str()); }
+TouchLongPressFilter::TouchLongPressFilter(QObject* parent) : QObject(parent) { timer.setInterval(100); connect(&timer,&QTimer::timeout,this,&TouchLongPressFilter::handleLongPress_slot); }
+bool TouchLongPressFilter::eventFilter(QObject* obj,QEvent* event) {
+    if(event->type()==QEvent::TouchBegin || event->type()==QEvent::MouseButtonPress) { senderPushButton=qobject_cast<QPushButton*>(obj); jogKeepCount=0; timer.start(); }
+    if(event->type()==QEvent::TouchEnd || event->type()==QEvent::TouchCancel || event->type()==QEvent::MouseButtonRelease || event->type()==QEvent::Hide) touchEndEvent();
+    return QObject::eventFilter(obj,event);
 }
-
-Robot3dControlWidget* Robot3dControlWidget::GetInstance()
-{
-    return robot3dControl_handle;
-}
-
-Robot3dGLWidget* Robot3dControlWidget::GetRobot3dGLWidget(Robot3DShowTypes showType, bool isUpdateRTRobot3dMsg)
-{
-    CommDataController::GetInstance()->updateRealtimeRobot3dMsgSignal =  isUpdateRTRobot3dMsg;
-    robot3dGLWidget->SetShowType(showType);
-    return  robot3dGLWidget;
-}
-void Robot3dControlWidget::UpdateRobot3dJointAngle(JointPose jointPose)
-{
-    robot3dGLWidget->SetRobotJointAngle_slot(jointPose);
-}
-void Robot3dControlWidget::UpdateRobot3dToolPosition(Pose pose)
-{
-    robot3dGLWidget->SetRobotToolPosition_slot(pose);     
-}
-void Robot3dControlWidget::UpdateRobot3dSafetyToolData(QVector<SubstanceMsg> substanceMsgsIn)
-{
-    robot3dGLWidget->SetRobotSafetyToolData(substanceMsgsIn);
-}
-
-//重新调整三维窗口尺寸
-void Robot3dControlWidget::ResizeRobot3dMode()
-{
-    robot3dGLWidget->resize(robot3dGLWidget->size());
-}
-
-void Robot3dControlWidget::AddRobotWaypointPath(Pose pose)
-{
-    if(robot3dGLWidget->waypointPathlineGeometry->pointList.count()>=robot3dGLWidget->waypointPathlineGeometry->maxNum)
-    {
-        robot3dGLWidget->waypointPathlineGeometry->pointList.removeFirst();
-    }
-
-    //路点轨迹曲线
-    if((CommDataController::GetInstance()->curLuaScriptStatus==CR__DATA__LUA__SCRIPT_STATUS__lua_Script_run)
-        ||(CommDataController::GetInstance()->curLuaScriptStatus==CR__DATA__LUA__SCRIPT_STATUS__lua_Script_pause))//if(addWaypointPathLineSignal==true)
-    {
-        if(robot3dGLWidget->waypointPathlineGeometry->pointList.count()>0)
-        {
-            if((fabs(pose.X-preTcpPose.X)<5.0) && (fabs(pose.Y-preTcpPose.Y)<5.0) && (fabs(pose.Z-preTcpPose.Z)<5.0))
-            {
-                return;
-            }
-        }
-
-        robot3dGLWidget->waypointPathlineGeometry->pointList.append(QVector3D(pose.X,pose.Y,pose.Z));
-
-        if(robot3dGLWidget->waypointPathlineGeometry!=NULL)
-        {
-            robot3dGLWidget->waypointPathlineGeometry->AddDeleteLineData(robot3dGLWidget->waypointPathlineGeometry->pointList);
-        }
-    }
-    //路点轨迹曲线
-
-    this->preTcpPose = pose;
-}
-
-TouchLongPressFilter::TouchLongPressFilter(QObject *parent) : QObject(parent)
-{
-//        timer.setSingleShot(true);
-    pixmapName<<"pose_move_x+.png"<<"pose_move_x-.png"<<"pose_move_y+.png"<<"pose_move_y-.png"<<"pose_move_z+.png"<<"pose_move_z-.png"
-            <<"orient_move_x+.png"<<"orient_move_x-.png"<<"orient_move_y+.png"<<"orient_move_y-.png"<<"orient_move_z+.png"<<"orient_move_z-.png";
-    pixmapNamePress<<"pose_move_x+_press.png"<<"pose_move_x-_press.png"<<"pose_move_y+_press.png"<<"pose_move_y-_press.png"<<"pose_move_z+_press.png"<<"pose_move_z-_press.png"
-            <<"orient_move_x+_press.png"<<"orient_move_x-_press.png"<<"orient_move_y+_press.png"<<"orient_move_y-_press.png"<<"orient_move_z+_press.png"<<"orient_move_z-_press.png";
-    moveBtnString = "QPushButton{border:none; height:36px; background-color: #32b67a; color: #ffffff; border-radius: 4px;}"\
-                    "QPushButton:pressed{ background-color:#109358; border:none; border-radius: 4px;}"\
-                    "QPushButton:disabled{background-color:rgba(50,182,122,0.4);border:none; border-radius: 4px;}";
-    moveBtnPressString = "QPushButton{border:none; height:36px; background-color: #109358; color: #ffffff; border-radius: 4px;}"\
-                         "QPushButton:pressed{ background-color:#109358; border:none; border-radius: 4px;}"\
-                         "QPushButton:disabled{background-color:rgba(50,182,122,0.4);border:none; border-radius: 4px;}";
-    connect(&timer, &QTimer::timeout, this, &TouchLongPressFilter::handleLongPress_slot);
-}
-
-bool TouchLongPressFilter::eventFilter(QObject *obj, QEvent *event)
-{
-    switch (event->type())
-    {
-    case QEvent::TouchBegin:
-    {
-        senderPushButton = static_cast<QPushButton *>(obj);
-        if(!senderPushButton->isEnabled())
-        {
-            event->accept();
-            return true;
-        }
-        if(senderPushButton->objectName() == "move")
-        {
-            senderPushButton->setStyleSheet(moveBtnPressString+QString("QPushButton{width:100px;}"));
-            emit senderPushButton->pressed();
-        }
-        else
-        {
-            senderPushButton->setStyleSheet(QString("QPushButton{border:none;background:transparent;border-image: url(:/resource/image/%1);}").arg(pixmapNamePress.at(senderPushButton->objectName().toInt())));
-            handleLongPress_slot();
-            timer.start(200); // 设置长按时间阈值
-        }
-        event->accept();
-        return true;
-    }
-    case QEvent::TouchEnd:
-    {
-        senderPushButton = static_cast<QPushButton *>(obj);
-        if(senderPushButton->objectName() == "move")
-        {
-            senderPushButton->setStyleSheet(moveBtnString+QString("QPushButton{width:100px;}"));
-            emit senderPushButton->released();
-        }
-        else
-        {
-            senderPushButton->setStyleSheet(QString("QPushButton{border:none;background:transparent;border-image: url(:/resource/image/%1);}").arg(pixmapName.at(senderPushButton->objectName().toInt())));
-            timer.stop();
-            touchEndEvent();
-        }
-        event->accept();
-        return true;
-    }
-    case QEvent::MouseButtonPress:
-    case QEvent::MouseButtonRelease:
-    {
-        QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
-        if(mouseEvent->source() == Qt::MouseEventSynthesizedBySystem || mouseEvent->source() == Qt::MouseEventSynthesizedByQt)
-        {
-            event->accept();
-            return true;
-        }
-        break;
-    }
-    case QEvent::MouseButtonDblClick:
-    {
-        static_cast<QPushButton *>(obj)->click();
-        event->accept();
-        return true;
-    }
-    default:
-        break;
-    }
-    return QObject::eventFilter(obj, event);
-}
-
-void TouchLongPressFilter::handleLongPress_slot()
-{
-    //处理长按时的逻辑
-    if(senderPushButton != NULL)
-    {
-        senderPushButton->click();
-        jogKeepCount++;
-    }
-}
-
-void TouchLongPressFilter::touchEndEvent()
-{
-    if(CommDataController::GetInstance()->curRobotModes <11 || CommDataController::GetInstance()->curRobotModes ==CR__DATA__ROBOT_MODES__CloseBrake)
-    {
-        TipMsgDialog::GetInstance()->ShowThisDialog(WarningLevel::LV_WARNING, tr("警告"), tr("机械臂未上电使能完成！"));
-        return;
-    }
-    if(senderPushButton != NULL && senderPushButton->isDown()== false)
-    {
-        if(this->jogKeepCount>2)
-        {
-            CommDataController::GetInstance()->movePara.movetype = CRService__MoveType::CR__SERVICE__MOVE_TYPE__DecStop;
-            CommDataController::GetInstance()->moveControlSignal = true;
-        }
-        jogKeepCount = 0;
-    }
-}
+void TouchLongPressFilter::handleLongPress_slot() { if(senderPushButton) { senderPushButton->click(); ++jogKeepCount; } }
+void TouchLongPressFilter::touchEndEvent() { timer.stop(); if(jogKeepCount>2) emit stopRequested(); jogKeepCount=0; senderPushButton=nullptr; }

@@ -14,7 +14,7 @@
 
 #define G_SCALE 0.04
 
-extern int g_openglVersion;
+
 
 struct FeatureVertexData
 {
@@ -80,13 +80,17 @@ struct MeshEntry
 {
     VertexData *verticesData;
     VertexData *verticesDataBackup;   //顶点数据备份
-    ushort numVertices=0;
+    unsigned int numVertices=0;
     QOpenGLBuffer VB;
 };
 
 
 class BaseGeometry : public QOpenGLFunctions
 {
+  protected:
+    int m_glMajor=2;
+    void uploadVertices();
+
  public:
     BaseGeometry();
     virtual ~BaseGeometry();

@@ -4,6 +4,8 @@ param(
     [string]$Configuration = 'Debug',
     [ValidateSet('Configure', 'Build', 'Rebuild', 'Clean', 'Run')]
     [string]$Action = 'Build',
+    [switch]$WithVTK,
+    [string]$VtkDir = '',
     [ValidateRange(1, 64)]
     [int]$Jobs = [Math]::Min(4, [Environment]::ProcessorCount)
 )
@@ -17,7 +19,8 @@ $vcVarsAll = 'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.b
 $jom = 'C:\Qt\Qt5.9.9\Tools\QtCreator\bin\jom.exe'
 $cmake = 'C:\CMake\bin\cmake.exe'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$runDir = Join-Path $projectRoot 'build\vscode-qt5.9.9-msvc2015_64'
+$runName = if ($WithVTK) { 'build\vscode-qt5.9.9-msvc2015_64-vtk' } else { 'build\vscode-qt5.9.9-msvc2015_64' }
+$runDir = Join-Path $projectRoot $runName
 $buildDir = Join-Path $runDir $Configuration
 $program = Join-Path $buildDir 'bin\robot3ddemo.exe'
 $qmake = Join-Path $qtRoot 'bin\qmake.exe'
@@ -81,7 +84,18 @@ try {
         "-DROBOT3D_QT_ROOT:PATH=$qtRoot",
         "-DROBOT3D_RUNTIME_DIR:PATH=$runDir"
     )
-    Write-Host "Configuring Qt $version / MSVC2015 x64 / $Configuration"
+    if ($WithVTK) {
+        if (-not $VtkDir) {
+            $vtkMetadata=Join-Path $projectRoot "build\deps\vtk-sdk-$Configuration.json"
+            if(Test-Path -LiteralPath $vtkMetadata) { $VtkDir=(Get-Content -LiteralPath $vtkMetadata -Raw -Encoding UTF8 | ConvertFrom-Json).vtkDir }
+            else { $VtkDir = Join-Path $projectRoot "build\deps\vtk-9.2.6-v140-$Configuration\install\lib\cmake\vtk-9.2" }
+        }
+        if (-not (Test-Path -LiteralPath (Join-Path $VtkDir 'vtk-config.cmake'))) {
+            throw "VTK SDK not found: $VtkDir. Run tools/build-vtk.ps1 -Configuration $Configuration first, or specify -VtkDir."
+        }
+        $configureArgs += @('-DROBOT3D_WITH_VTK=ON', "-DVTK_DIR:PATH=$VtkDir")
+    } else { $configureArgs += '-DROBOT3D_WITH_VTK=OFF' }
+    Write-Host "Configuring Qt $version / MSVC2015 x64 / $Configuration (VTK=$WithVTK)"
     Invoke-Checked $cmake $configureArgs
     if ($Action -eq 'Configure') { exit 0 }
 

@@ -35,63 +35,17 @@ PlaneGeometry::~PlaneGeometry()
 
 void PlaneGeometry::SetPlaneData(PlaneMsg planeMsgIn)
 {
-    this->planeMsg = planeMsgIn;
-    GeneratePlaneData(planeMsgIn);
-    num_vertex_data = vertex_data.size();
-    //绑定顶点数据
-   vertex_data_Buf.bind();
-   if(g_openglVersion>2)
-   {
-      auto ptrVertex=vertex_data_Buf.map(QOpenGLBuffer::WriteOnly);
-      memcpy(ptrVertex,vertex_data.data(),sizeof(FeatureVertexData)*num_vertex_data);
-      vertex_data_Buf.unmap();
-      vertex_data_Buf.release();
-   }
-   else
-   {
-      vertex_data_Buf.allocate(vertex_data.data(), num_vertex_data * sizeof(FeatureVertexData));
-   }
+    planeMsg=planeMsgIn; GeneratePlaneData(planeMsgIn); uploadVertices();
 }
 
 void PlaneGeometry::SetPlaneData(QVector<PlaneMsg> planeMsgsIn)
 {
-
-    GeneratePlanesData(planeMsgsIn);
-    num_vertex_data = vertex_data.size();
-    vertex_data_Buf.bind();
-    if(g_openglVersion>2)
-    {
-      auto ptrVertex=vertex_data_Buf.map(QOpenGLBuffer::WriteOnly);
-      memcpy(ptrVertex,vertex_data.data(),sizeof(FeatureVertexData)*num_vertex_data);
-      vertex_data_Buf.unmap();
-      vertex_data_Buf.release();
-     }
-    else
-    {
-       vertex_data_Buf.allocate(vertex_data.data(), num_vertex_data * sizeof(FeatureVertexData));
-    }
+    planeMsgs=planeMsgsIn; if(!planeMsgsIn.isEmpty()) planeMsg=planeMsgsIn[0];
+    GeneratePlanesData(planeMsgsIn); uploadVertices();
 }
 void PlaneGeometry::AddDeletePlaneData(QVector<PlaneMsg> planeMsgsIn)
 {
-    GeneratePlanesData(planeMsgsIn);
-    num_vertex_data = vertex_data.size();
-    if(g_openglVersion>2)
-    {
-        vertex_data_Buf.bind();
-        //vertex_data_Buf.allocate(nullptr,sizeof(FeatureVertexData)*num_vertex_data);
-        auto ptrVertex = vertex_data_Buf.map(QOpenGLBuffer::WriteOnly);
-        memcpy(ptrVertex,vertex_data.data(),sizeof(FeatureVertexData)*num_vertex_data);
-        vertex_data_Buf.unmap();
-        vertex_data_Buf.release();
-    }
-    else
-    {
-        vertex_data_Buf.destroy();
-        vertex_data_Buf.create();
-        vertex_data_Buf.bind();
-        vertex_data_Buf.allocate(vertex_data.data(), num_vertex_data * sizeof(FeatureVertexData));
-    }
-
+    SetPlaneData(planeMsgsIn);
 }
 
 bool PlaneGeometry::initShaders()

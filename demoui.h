@@ -1,67 +1,45 @@
-#ifndef DEMOUI_H
-#define DEMOUI_H
-
+#pragma once
 #include <QWidget>
 #include <QComboBox>
 #include <QLabel>
 #include <QPlainTextEdit>
-#include <QTimer>
-#include <QVector>
-
-#include "3dmodel/demo_support.h"
-
-class Robot3dGLWidget;
+#include <memory>
+#include "robot3d/presentation/IRobot3dView.h"
+class RobotViewport;
 class QSlider;
 class QCheckBox;
-
-/**
- * @brief 移植验证 demo 的主界面
- *
- * 左侧：直接嵌入原项目的 3D 控件 Robot3dGLWidget（经 Robot3dControlWidget 单例取出）
- * 右侧：演示控制面板 —— 机型切换 / 关节滑条 / 运动模拟 / 坐标系切换 / 显示项开关
- */
-class DemoUi : public QWidget
-{
+namespace robot3d { namespace composition { class Robot3dComposition; } }
+class DemoUi : public QWidget, public robot3d::presentation::IRobot3dView {
     Q_OBJECT
 public:
-    explicit DemoUi(QWidget *parent = nullptr);
+    explicit DemoUi(QWidget* parent=nullptr);
     ~DemoUi();
-
+    bool prepareModel(robot3d::domain::RobotConfigurationPtr config,std::string& error) override;
+    void showState(const robot3d::presentation::Robot3dDisplayModel& model) override;
+    void submitScene(const robot3d::scene::RobotSceneSnapshot& scene) override;
+    void showError(const std::string& error) override;
+    void appendLog(const std::string& message) override;
 private slots:
     void OnRobotTypeChanged(int index);
     void OnJointSliderChanged();
-    void OnSimTimer();
     void OnSimToggled(bool checked);
     void OnCoordSysChanged(int index);
     void OnResetJoint();
-    void OnCheckDump();
     void OnDisplayFlagChanged();
-
+    void OnFramePresented(qulonglong revision);
 private:
-    QWidget *BuildControlPanel();
-    void     AddLog(const QString &msg);
-    void     RefreshPoseLabels();
-    void     ApplyJointFromSliders();
-
-    Robot3dGLWidget *m_glWidget = nullptr;
-
-    QComboBox *m_robotTypeCb = nullptr;
-    QSlider   *m_jointSlider[ROB_AXIS_NUM] = {nullptr};
-    QLabel    *m_jointLabel[ROB_AXIS_NUM] = {nullptr};
-    QLabel    *m_poseLabel = nullptr;
-    QLabel    *m_speedLabel = nullptr;
-    QCheckBox *m_simCb = nullptr;
-    QCheckBox *m_coordSysCb = nullptr;
-    QCheckBox *m_waypointCb = nullptr;
-    QCheckBox *m_pathCb = nullptr;
-    QCheckBox *m_toolCb = nullptr;
-    QComboBox *m_coordSysSelectCb = nullptr;
-
-    QTimer         *m_simTimer = nullptr;
-    QPlainTextEdit *m_logEdit = nullptr;
-
-    bool m_updatingSliders = false;
-    bool m_dumpShotDone = false;
+    QWidget* BuildControlPanel();
+    void OnCheckDump();
+    std::unique_ptr<robot3d::composition::Robot3dComposition> composition_;
+    robot3d::presentation::Robot3dDisplayModel model_;
+    RobotViewport* m_viewport=nullptr;
+    QComboBox* m_backendCb=nullptr;
+    QComboBox *m_robotTypeCb=nullptr,*m_coordSysSelectCb=nullptr;
+    QSlider* m_jointSlider[6]={};
+    QLabel* m_jointLabel[6]={};
+    QLabel *m_poseLabel=nullptr,*m_speedLabel=nullptr;
+    QCheckBox *m_simCb=nullptr,*m_coordSysCb=nullptr,*m_waypointCb=nullptr,*m_pathCb=nullptr,*m_toolCb=nullptr;
+    QPlainTextEdit* m_logEdit=nullptr;
+    bool m_updatingSliders=false,m_dumpShotDone=false,m_dumpInProgress=false;
+    int dumpStage_=0;
 };
-
-#endif // DEMOUI_H

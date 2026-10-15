@@ -1,68 +1,15 @@
 ﻿#include "robotgeometry.h"
 #include <QFileInfo>   // [demo 适配] 原项目由 basedefine.h 间接引入
-#include "demo_support.h"
+#include "robot3d/rendering/RobotMeshLoader.h"
+#include <QOpenGLContext>
+#include <QDir>
 
 #define mmin(x,y) ((x)<(y)?(x):(y))
 
-RobotGeometry::RobotGeometry() //: indexBuf(QOpenGLBuffer::IndexBuffer)
-{
+RobotGeometry::RobotGeometry() {
     initializeOpenGLFunctions();
-    numJoints = 6;
-    numTool = 0;
-
-//    WholeDH stdRobotWholeDH1[6]={ {0,        0,   161.2, 0,        0},
-//                              {M_PI/2.0, 0,   0, M_PI/2.0, 0},
-//                              {0,        425,  0,    0,        0},
-//                              {0,        393,  114.3,    -M_PI/2.0,0},
-//                              {-M_PI/2.0, 0,  99,    0,        0},
-//                              {M_PI/2.0,  0,  95.3,  0,        0} };
- //   this->ChangeRobot3D("G6",stdRobotWholeDH1);
-
-    this->ChangeRobot3D(CommDataController::GetInstance()->robotType.robotTypeParaStr,CommDataController::GetInstance()->stdRobotWholeDH);
-//    QString appPath = "./"; //= QCoreApplication::applicationDirPath();
-//    //加载多个模型文件
-//    QString file[7]={
-//        appPath+"/robotType/G6/model3d/base.obj",
-//        appPath+"/robotType/G6/model3d/joint1.obj",
-//        appPath+"/robotType/G6/model3d/joint2.obj",
-//        appPath+"/robotType/G6/model3d/joint3.obj",
-//        appPath+"/robotType/G6/model3d/joint4.obj",
-//        appPath+"/robotType/G6/model3d/joint5.obj",
-//        appPath+"/robotType/G6/model3d/joint6.obj"
-//    };
-
-//    for(int i=0;i<7;++i)
-//    {
-//        MeshEntry meshModel;
-//        bool result = LoadMesh(file[i].toStdString(), meshModel,i);
-//        if(result)
-//        {
-//            entriesData.push_back(meshModel);
-//        }
-//        else
-//        {
-//            qDebug()<<("load 3D model fail!");
-//        }
-//    }
-
-//    //entriesDataBackup=entriesData;
-//    CalRobotViewTargetPos();
-
-//    QMatrix4x4 identify;
-
-//    multiJointData joint1={ QVector3D(0.0f,0.0f,0.0f)*G_SCALE, QVector3D(0,0,1),identify};
-//    multiJointData joint2={ QVector3D(0.0f,0.0f,161.2f)*G_SCALE, QVector3D(0,-1,0),identify};
-//    multiJointData joint3={ QVector3D(0.0f,0.0f,586.2f)*G_SCALE,  QVector3D(0,-1,0),identify};
-//    multiJointData joint4={ QVector3D(0.0f,0.0f,979.2f)*G_SCALE,  QVector3D(0,-1,0),identify};
-//    multiJointData joint5={ QVector3D(0.0f,-113.3f,0.0f)*G_SCALE, QVector3D(0,0,1),identify};
-//    multiJointData joint6={ QVector3D(0.0f,0.0f,1078.2f)*G_SCALE, QVector3D(0,-1,0),identify};
-
-//    jointData.push_back(joint1);
-//    jointData.push_back(joint2);
-//    jointData.push_back(joint3);
-//    jointData.push_back(joint4);
-//    jointData.push_back(joint5);
-//    jointData.push_back(joint6);
+    m_glMajor=QOpenGLContext::currentContext()->format().majorVersion();
+    numJoints=6; numTool=0;
 }
 
 void RobotGeometry::CalRobotViewTargetPos()
@@ -116,87 +63,27 @@ void RobotGeometry::CalRobotViewTargetPos()
     }
 }
 
-RobotGeometry::~RobotGeometry()
-{
-    for(int numModel=0;numModel<entriesData.size();numModel++)
-    {
-        entriesData[numModel].VB.destroy();
-        delete  entriesData[numModel].verticesData;
-        delete  entriesData[numModel].verticesDataBackup;
+RobotGeometry::~RobotGeometry() { clearMesh(); }
+void RobotGeometry::clearMesh() {
+    for(auto& entry:entriesData) {
+        entry.VB.destroy(); delete[] entry.verticesData; delete[] entry.verticesDataBackup;
     }
+    entriesData.clear(); jointData.clear();
 }
-
-
-bool RobotGeometry::LoadMesh(const std::string& Filename, MeshEntry &meshModel,int joint)
-{
-
-    Assimp::Importer Importer;
-    const aiScene* pScene = Importer.ReadFile(Filename.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
-    //三角化，每个面的时候平滑，UV翻转（纹理）
-
-    QMatrix4x4 scaleMatrix;
-    scaleMatrix.scale(G_SCALE);
-
-    if (pScene)
-    {
-        //求每个模型文件的顶点数
-        for (int numMesh = 0; numMesh< pScene->mNumMeshes; numMesh++)
-        {
-            const aiMesh* paiMesh = pScene->mMeshes[numMesh];
-            meshModel.numVertices+=paiMesh->mNumVertices;
-        }
-
-        meshModel.verticesData =new VertexData[meshModel.numVertices];
-        int num=0;
-        for (int numMesh = 0; numMesh< pScene->mNumMeshes; numMesh++)
-        {
-            const aiMesh* paiMesh = pScene->mMeshes[numMesh];
-
-            aiColor3D color;
-            aiMaterial* material = pScene->mMaterials[paiMesh->mMaterialIndex];
-            material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
-
-            for (unsigned int i = 0; i < paiMesh->mNumVertices; i++)
-            {
-                const aiVector3D* pPos = &(paiMesh->mVertices[i]);
-                const aiVector3D* pNormal = &(paiMesh->mNormals[i]);
-
-                QVector4D data_ver(pPos->x,pPos->y,pPos->z,1.0);
-                QVector4D data_ver_transform=scaleMatrix*data_ver;
-
-                meshModel.verticesData[i+num].position.setX(data_ver_transform.x());
-                meshModel.verticesData[i+num].position.setY(data_ver_transform.y());
-                meshModel.verticesData[i+num].position.setZ(data_ver_transform.z());
-
-                meshModel.verticesData[i+num].material.setX(color.r);
-                meshModel.verticesData[i+num].material.setY(color.g);
-                meshModel.verticesData[i+num].material.setZ(color.b);
-
-                meshModel.verticesData[i+num].normal.setX(pNormal->x);
-                meshModel.verticesData[i+num].normal.setY(pNormal->y);
-                meshModel.verticesData[i+num].normal.setZ(pNormal->z);
-
-            }//获取一个mesh对应点的几何信息
-             num=num+paiMesh->mNumVertices;
-        }
-
-        //对数据进行备份
-        meshModel.verticesDataBackup =new VertexData[meshModel.numVertices];
-        memcpy(meshModel.verticesDataBackup, meshModel.verticesData, sizeof(VertexData)*meshModel.numVertices);
-
-        //根据顶点序列构建buffer
-        meshModel.VB.create();
-        meshModel.VB.bind();
-        meshModel.VB.allocate(meshModel.verticesData,sizeof(VertexData)*meshModel.numVertices);
-        meshModel.VB.release();
-
-        return true;
+bool RobotGeometry::LoadMesh(const std::string& file,MeshEntry& entry,int joint) {
+    Q_UNUSED(joint)
+    robot3d::rendering::CpuRobotMesh mesh; QString error;
+    if(!robot3d::rendering::loadRobotMesh(QString::fromStdString(file),mesh,error)) { qWarning()<<error; return false; }
+    entry.numVertices=mesh.vertices.size();
+    entry.verticesData=new VertexData[entry.numVertices];
+    entry.verticesDataBackup=new VertexData[entry.numVertices];
+    for(unsigned i=0;i<entry.numVertices;++i) {
+        entry.verticesData[i]={mesh.vertices[int(i)].position*G_SCALE,mesh.vertices[int(i)].normal,mesh.vertices[int(i)].material};
+        entry.verticesDataBackup[i]=entry.verticesData[i];
     }
-    else
-    {
-        qDebug()<<QString("Error parsing %1:%2\n").arg(Filename.c_str()).arg(Importer.GetErrorString());
-        return false;
-    }
+    if(!entry.VB.create() || !entry.VB.bind()) { delete[] entry.verticesData; delete[] entry.verticesDataBackup; entry.verticesData=nullptr; entry.verticesDataBackup=nullptr; return false; }
+    entry.VB.allocate(entry.verticesData,sizeof(VertexData)*entry.numVertices); entry.VB.release();
+    return true;
 }
 
 QMatrix4x4 RobotGeometry::setTransformMatrix(QVector3D center, QVector3D normal,float degree)
@@ -319,7 +206,7 @@ void RobotGeometry::multjointTransform(double array[6])
             //对更新后的顶点数据重新绑定
             int num_ver=entriesData[joint].numVertices;
              entriesData[joint].VB.bind();
-            if(g_openglVersion>2)
+            if(m_glMajor>2)
             {
             auto ptr =entriesData[joint].VB.map(QOpenGLBuffer::WriteOnly);
             memcpy(ptr, entriesData[joint].verticesData,sizeof(VertexData)*num_ver);
@@ -384,7 +271,7 @@ void RobotGeometry::drawGeometry(QMatrix4x4 model,QMatrix4x4 mvpMatrix, QMatrix4
     if(entriesData.size() < 1)  //未加载模型
         return;
 
-    for(int num_model=0;num_model<1+numJoints+mmin(numTool,showEndToolStatus);num_model++) // base joints tool
+    for(int num_model=0;num_model<1+numJoints+mmin(numTool,int(endWorkpieceVisible_));num_model++) // base joints tool
     {
 
             entriesData[num_model].VB.bind();
@@ -440,7 +327,7 @@ void RobotGeometry::drawSecondGeometry(QMatrix4x4 model,QMatrix4x4 mvpMatrix, QM
     if(entriesData.size() < 1)  //未加载模型
         return;
 
-    for(int num_model=0;num_model<1+numJoints+mmin(numTool,showEndToolStatus);num_model++) // base joints tool
+    for(int num_model=0;num_model<1+numJoints+mmin(numTool,int(endWorkpieceVisible_));num_model++) // base joints tool
     {
             entriesData[num_model].VB.bind();
 
@@ -471,23 +358,14 @@ void RobotGeometry::MatrixMultiVector3D(float *matrix4x4,float *vector3d, QVecto
    result.setZ((*(matrix4x4+2))*(*(vector3d+0))+(*(matrix4x4+6))*(*(vector3d+1))+(*(matrix4x4+10))*(*(vector3d+2))+(*(matrix4x4+14)));
 }
 
-void RobotGeometry::ChangeRobot3D(QString name, WholeDH stdRobotWholeDH[6])
+bool RobotGeometry::ChangeRobot3D(QString directory, const WholeDH stdRobotWholeDH[6])
 {
-    this->entriesData.clear();
-    this->jointData.clear();
-
-    QString appPath = "./";
-    //加载多个模型文件
-    QString file[8]={
-        appPath+QString("/robotType/%1/model3d/base.obj").arg(name),
-        appPath+QString("/robotType/%1/model3d/joint1.obj").arg(name),
-        appPath+QString("/robotType/%1/model3d/joint2.obj").arg(name),
-        appPath+QString("/robotType/%1/model3d/joint3.obj").arg(name),
-        appPath+QString("/robotType/%1/model3d/joint4.obj").arg(name),
-        appPath+QString("/robotType/%1/model3d/joint5.obj").arg(name),
-        appPath+QString("/robotType/%1/model3d/joint6.obj").arg(name),
-        appPath+QString("/robotType/%1/model3d/tool.obj").arg(name),
-    };
+    clearMesh();
+    QDir root(directory);
+    QString file[8];
+    file[0]=root.filePath("base.obj");
+    for(int i=1;i<=6;++i) file[i]=root.filePath(QString("joint%1.obj").arg(i));
+    file[7]=root.filePath("tool.obj");
 
     QFileInfo toolFile(file[7]);
     numTool = toolFile.isFile() ? 1 : 0;
@@ -502,7 +380,7 @@ void RobotGeometry::ChangeRobot3D(QString name, WholeDH stdRobotWholeDH[6])
         }
         else
         {
-            qDebug()<<("load 3D model fail!");
+            clearMesh(); return false;
         }
     }
     CalRobotViewTargetPos();
@@ -530,7 +408,8 @@ void RobotGeometry::ChangeRobot3D(QString name, WholeDH stdRobotWholeDH[6])
     }
     else
     {
-        showEndToolStatus = 0;
+        endWorkpieceVisible_ = false;
     }
 
+    return true;
 }
