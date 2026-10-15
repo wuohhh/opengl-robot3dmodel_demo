@@ -659,7 +659,6 @@ updateRealtimeRobot3dMsgSignal         // 3D 控件是否跟随实时数据刷�
 | `demo.qrc` / `demo.pro` | 8 个 shader + 17 个图标入资源；`QT += opengl widgets`、assimp 头/库路径 |
 | `robotType/<机型>/` | `config.xml`（DH 参数）+ `model3d/{base,joint1..6,tool}.obj` + `.mtl`（材质色） |
 | `build.bat` / `run_demo.bat` | 一键构建（qmake + mingw32-make + 部署 Qt/assimp 运行库到 `run/`）与启动 |
-| `port_assets.py` / `port_code.py` | 移植脚本：资源拷贝 / include 批量改写（`REPLACE_MAP`） |
 
 ### Demo 侧的调用链（验证 `3dmodel/` 的最短路径）
 

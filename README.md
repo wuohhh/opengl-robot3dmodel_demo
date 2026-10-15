@@ -60,8 +60,7 @@ demo/
 ├── demo.qrc / demo.pro       资源与工程文件
 ├── build.bat                 ★ 一键构建（qmake + make + 部署运行库）
 ├── run_demo.bat              ★ 启动脚本（自动切到 run/ 目录）
-├── run/                      运行目录（exe + DLL + robotType，构建脚本生成）
-└── port_assets.py, port_code.py, capture_demo.ps1   移植与验证脚本（可复用/可参考）
+└── run/                      运行目录（exe + DLL + robotType，构建脚本生成）
 ```
 
 ---
@@ -170,11 +169,13 @@ GLSL 编译器会报 `illegal non-ASCII character (0xef/0xbb/0xbf)`，着色器�
 | 编译 | `mingw32-make` 成功，`robot3ddemo.exe` 291 KB，无 error |
 | 依赖链接 | assimp（MinGW 导入库）链接成功，`libassimp.dll` 正常加载 |
 | 启动 | 进程稳定运行（约 130 MB 工作集），窗口与全部 Qt 控件正常 |
-| **模型渲染** | **六轴机械臂 6 个部件 + RGB 坐标系正确渲染**（截图 `run/demo_frame.png`） |
+| **模型渲染** | **六轴机械臂 6 个部件 + RGB 坐标系正确渲染** |
 | 机型配置 | `config.xml` 中 6 段 DH 参数解析成功（alog：`载入机型 "G6L-3-20" DH 段数: 6`） |
-| **关节联动** | 推进 90 步模拟后，大臂前倾、小臂弯曲，姿态随关节角正确变化（`run/frame_tcp.png`） |
+| **关节联动** | 推进 90 步模拟后，大臂前倾、小臂弯曲，姿态随关节角正确变化 |
 | TCP 点 | 缩放修正后落在末端法兰，与正解位姿一致 |
 | 着色器 | 8 个 GLSL 全部编译链接成功（`demo_debug.log` 无 shader 报错） |
+
+验证日志与截图为临时输出，可用下方命令重新生成。
 
 复现命令：
 
@@ -186,8 +187,7 @@ set DEMO_DUMP_SIMSTEPS=90
 robot3ddemo.exe
 ```
 
-（三个环境变量用于无人值守验证：先存初始帧 → 推进 n 步模拟 → 存结果帧 → 自动退出。
-`demo/capture_demo.ps1` 可另行抓取窗口 GDI 截图。）
+（三个环境变量用于无人值守验证：先存初始帧 → 推进 n 步模拟 → 存结果帧 → 自动退出。）
 
 ---
 
@@ -195,8 +195,7 @@ robot3ddemo.exe
 
 1. **拷贝文件**：`3dmodel/`（含 `demo_support.*`）、`shaders/`、`resource/image/` 中的 17 个图标、
    `assimp/`（头文件 + 对应平台的导入库）、目标机型目录 `robotType/<机型>/`。
-2. **改 include**：把 `3dmodel/` 里 5 个源文件头部对原项目路径的 include 换成 `#include "demo_support.h"`
-   （可直接复用 `port_code.py` 的 `REPLACE_MAP`）。
+2. **改 include**：把 `3dmodel/` 里 5 个源文件头部对原项目路径的 include 换成 `#include "demo_support.h"`。
 3. **接数据源**：把 `DemoDataHub` 换成目标项目自己的数据单例——二选一：
    * 改 `#define CommDataController <你的单例类名>`；
    * 或保留 `DemoDataHub` 名字，在其 setter 里桥接到目标项目的实时数据。
@@ -221,17 +220,71 @@ robot3ddemo.exe
 
 ---
 
-## 十、移植脚本说明（可复用）
+## 附：VS Code 无法 Ctrl+左键跳转的原因与修复
 
-| 脚本 | 作用 |
-|---|---|
-| `port_assets.py` | 从原项目拷贝源码/shader/图标/机型模型/assimp 到 demo（本机有透明加密，Python 在白名单内，读写为明文） |
-| `port_code.py` | 批量改写 include 指向 `demo_support.h`（`REPLACE_MAP` 可直接复用到其它项目） |
-| `capture_demo.ps1` | 启动 demo 并抓取窗口截图（`PrintWindow` 抓不到 OpenGL 内容，验证 3D 请用 `DEMO_DUMP_FRAME` 帧缓冲导出） |
+### 结论（不是加密系统的问题）
 
-> 编译期暴露的类型缺口（`UserPushButton`、`RamMonotorThread`、`EXJointPose`、`CoordSysType`、
-> `CR6_SAFETY_LIMITS_BOUNDARY_PLANE_NUM` 等）已全部合入 `demo_support.h`，无需再跑额外补丁脚本。
+本机装有透明文件级加密系统，项目源码（`.h/.cpp`）在磁盘上是密文（文件头 `88 7D 1C`）。
+但**加密不是跳转失败的原因**，已实测排除：用本工程同款 MinGW g++ 去 include
+密文的 `3dmodel/basegeometry.h`，预处理器能读到明文内容，报错是
+`fatal error: QOpenGLFunctions: No such file or directory`（只是在抱怨缺少 Qt 头文件路径），
+说明编译器这类白名单进程读到的就是明文。VS Code 同理——你能正常看到并编辑明文即为证据。
 
-> **注意**：本机装有透明加密系统，`.cpp/.h` 等扩展名在非白名单进程写入后会被重新加密，
-> 因此以上补丁脚本统一用 `open(p,'rb')` + `open(p,'wb')` 的二进制方式读写，
-> 避免 Python 文本模式把 CRLF 静默转成 LF。
+### 真正的三层原因
+
+| 层 | 问题 | 后果 |
+|---|---|---|
+| 1 | 工程是 **qmake**（`demo.pro`），而 VS Code 的 C/C++ 扩展（cpptools）**不解析 `.pro`**；Qt 官方扩展（qt-cpp）也只认 CMake 和 `compile_commands.json` | 工程里的 `INCLUDEPATH`、`DEFINES` 对 IDE 完全不可见 |
+| 2 | 工程内既无 `compile_commands.json` 也无 `.vscode/`，cpptools 退化为"单文件默认模板" | `QtWidgets/*`、`assimp/*` 全部解析失败 → Qt 类型无定义 → 连带跳转失效 |
+| 3 | 用户级 `settings.json` 里 `qt-core.additionalQtPaths` 指向 `msvc2015_64`，与本工程实际使用的 **MinGW 32 位** 不符 | 即使扩展试图推断工具链，拿到的也是另一套 Qt |
+
+补充证据：修复前该项目的工作区缓存里**没有** cpptools 的符号库（`.browse.VC.db`），
+整个目录仅约 288 KB，说明 IntelliSense 从未在此工程成功建立过索引。
+
+### 修复方式（已落地）
+
+不替代原有 qmake 流程，而是新增一条并存的 CMake 入口，用途是产出编译数据库：
+
+```
+CMakeLists.txt                       新增，与 demo.pro 逐项对齐
+build-cmake/compile_commands.json    CMake 生成（已 gitignore）
+expand_compile_commands.py           展开响应文件（必需，见下）
+.vscode/c_cpp_properties.json        指向编译数据库 + Qt/assimp 头文件兜底
+.vscode/settings.json                排除 build/run 目录，避免无谓索引
+```
+
+### 为什么需要 expand_compile_commands.py
+
+CMake 的 MinGW Makefiles 生成器会把 include 路径塞进 `@CMakeFiles/.../includes_CXX.rsp`
+响应文件（`CMAKE_CXX_USE_RESPONSE_FILE_FOR_INCLUDES=OFF` 对该生成器无效，已实测）。
+cpptools 不解析响应文件，若不展开则 Qt 头文件依然找不到。故配置后需展开一次。
+
+### 日常使用
+
+`build-cmake/` 是可删除的生成目录。清理该目录或改动源文件列表、依赖后，执行以下命令重新生成索引：
+
+```bat
+cmake -S . -B build-cmake -G "MinGW Makefiles" ^
+      -DCMAKE_PREFIX_PATH=C:/Qt/Qt5.9.9/5.9.9/mingw53_32 ^
+      -DCMAKE_BUILD_TYPE=Debug
+python expand_compile_commands.py build-cmake
+```
+
+然后 VS Code 执行 `Ctrl+Shift+P` → `C/C++: Reset IntelliSense Database`，
+（或 `Developer: Reload Window`）即可恢复跳转与补全。
+
+用 CMake 构建（可选，替代 build.bat）：
+
+```bat
+cmake --build build-cmake -j 4
+```
+
+注意：程序用相对路径 `./robotType/<机型>/...` 加载模型，因此必须在 `run/`
+目录下启动 `robot3ddemo.exe`（CMake 已把 exe 输出到 `run/`）。
+两个构建入口共用同一个 `run/` 目录，切换时建议用 `windeployqt` 补全运行时 DLL。
+
+### 如果只想手动配置（不引入 CMake）
+
+删除 `.vscode/c_cpp_properties.json` 里的 `compileCommands` 一行即可——
+该文件中的 `includePath` / `defines` / `compilerPath` 是独立可用的兜底配置
+（但缺少每个文件的精确宏，遇到条件编译分支时不如编译数据库准确）。
