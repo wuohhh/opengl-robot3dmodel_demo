@@ -10,3 +10,16 @@ Makefile.*
 .qmake.stash
 .moc/
 .rcc/
+
+# CMake 构建入口（build-cmake/）与生成的编译数据库
+build-cmake/
+
+# C/C++ 扩展消费的编译数据库（由 CMake 生成，不入库）
+compile_commands.json
+
+# Qt Creator 自动生成的本机配置
+*.pro.user
+*.pro.user.*
+
+# OBJ files under robotType are source models, not compiler output.
+!robotType/**/*.obj

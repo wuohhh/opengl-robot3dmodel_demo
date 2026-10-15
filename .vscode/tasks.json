@@ -1,0 +1,339 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Qt 5.9.9 MSVC2015 x64: Build Debug",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/qt-msvc.ps1",
+                "-Configuration",
+                "Debug",
+                "-Action",
+                "Build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                {
+                    "base": "$msCompile",
+                    "fileLocation": [
+                        "autoDetect",
+                        "${workspaceFolder}"
+                    ]
+                }
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Qt 5.9.9 MSVC2015 x64: Rebuild Debug",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/qt-msvc.ps1",
+                "-Configuration",
+                "Debug",
+                "-Action",
+                "Rebuild"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                {
+                    "base": "$msCompile",
+                    "fileLocation": [
+                        "autoDetect",
+                        "${workspaceFolder}"
+                    ]
+                }
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Qt 5.9.9 MSVC2015 x64: Clean Debug",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/qt-msvc.ps1",
+                "-Configuration",
+                "Debug",
+                "-Action",
+                "Clean"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                {
+                    "base": "$msCompile",
+                    "fileLocation": [
+                        "autoDetect",
+                        "${workspaceFolder}"
+                    ]
+                }
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "Qt 5.9.9 MSVC2015 x64: Configure Debug",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/qt-msvc.ps1",
+                "-Configuration",
+                "Debug",
+                "-Action",
+                "Configure"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                {
+                    "base": "$msCompile",
+                    "fileLocation": [
+                        "autoDetect",
+                        "${workspaceFolder}"
+                    ]
+                }
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "Qt 5.9.9 MSVC2015 x64: Run Debug",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/qt-msvc.ps1",
+                "-Configuration",
+                "Debug",
+                "-Action",
+                "Run"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "dependsOn": "Qt 5.9.9 MSVC2015 x64: Build Debug",
+            "dependsOrder": "sequence"
+        },
+        {
+            "label": "Qt 5.9.9 MSVC2015 x64: Build Release",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/qt-msvc.ps1",
+                "-Configuration",
+                "Release",
+                "-Action",
+                "Build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                {
+                    "base": "$msCompile",
+                    "fileLocation": [
+                        "autoDetect",
+                        "${workspaceFolder}"
+                    ]
+                }
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Qt 5.9.9 MSVC2015 x64: Rebuild Release",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/qt-msvc.ps1",
+                "-Configuration",
+                "Release",
+                "-Action",
+                "Rebuild"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                {
+                    "base": "$msCompile",
+                    "fileLocation": [
+                        "autoDetect",
+                        "${workspaceFolder}"
+                    ]
+                }
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Qt 5.9.9 MSVC2015 x64: Clean Release",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/qt-msvc.ps1",
+                "-Configuration",
+                "Release",
+                "-Action",
+                "Clean"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                {
+                    "base": "$msCompile",
+                    "fileLocation": [
+                        "autoDetect",
+                        "${workspaceFolder}"
+                    ]
+                }
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "Qt 5.9.9 MSVC2015 x64: Configure Release",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/qt-msvc.ps1",
+                "-Configuration",
+                "Release",
+                "-Action",
+                "Configure"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                {
+                    "base": "$msCompile",
+                    "fileLocation": [
+                        "autoDetect",
+                        "${workspaceFolder}"
+                    ]
+                }
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "Qt 5.9.9 MSVC2015 x64: Run Release",
+            "type": "process",
+            "command": "${env:WINDIR}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/qt-msvc.ps1",
+                "-Configuration",
+                "Release",
+                "-Action",
+                "Run"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "dependsOn": "Qt 5.9.9 MSVC2015 x64: Build Release",
+            "dependsOrder": "sequence"
+        }
+    ]
+}

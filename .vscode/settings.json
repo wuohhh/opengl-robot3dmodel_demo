@@ -1,0 +1,15 @@
+{
+    "cmake.configureOnOpen": false,
+    "C_Cpp.files.exclude": {
+        "**/.vscode": true,
+        "**/build": true
+    },
+    "files.watcherExclude": {
+        "**/build/**": true
+    },
+    "search.exclude": {
+        "**/build": true
+    },
+    "qt-cpp.disableAutoKitGenerationOnOpen": true,
+    "cmake.enableAutomaticKitScan": false
+}

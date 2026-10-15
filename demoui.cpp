@@ -17,6 +17,8 @@
 #include "3dmodel/robot3dcontrolwidget.h"
 #include "3dmodel/robot3dglwidget.h"
 
+// Qt 5 的 QStringLiteral 拼接 u"" 与窄字符串时，MSVC2015 会错误解码中文。
+// 中文显式从 UTF-8 转换；编译选项仍需保留 /utf-8。
 namespace {
 
 const char *kRobotTypes[] = {"G6L-3-20", "G6-1-1", "X20-1-3"};
@@ -35,7 +37,7 @@ const double kJointLimit[ROB_AXIS_NUM][2] = {
 
 DemoUi::DemoUi(QWidget *parent) : QWidget(parent)
 {
-    setWindowTitle(QStringLiteral("CGX-TP 机械臂 3D 显示模块 —— 移植验证 Demo"));
+    setWindowTitle(QString::fromUtf8("CGX-TP 机械臂 3D 显示模块 —— 移植验证 Demo"));
 
     // ------------------------------------------------------------------
     // 1. 关键：必须先准备好数据源（机型名 + DH 参数），再让 3D 控件去加载模型。
@@ -50,14 +52,14 @@ DemoUi::DemoUi(QWidget *parent) : QWidget(parent)
     {
         CoordSysMsg cs;
         cs.coordSysID = "p_0";
-        cs.coordSysName = QStringLiteral("用户坐标系1");
+        cs.coordSysName = QString::fromUtf8("用户坐标系1");
         cs.coordSysPose = {400, 0, 200, 0, 0, 0};
         cs.coordSysValid = true;
         cfg->coordSysList.append(cs);
 
         WcsMsg wcs;
         wcs.wcsID = "wcs_0";
-        wcs.wcsName = QStringLiteral("工件坐标系1");
+        wcs.wcsName = QString::fromUtf8("工件坐标系1");
         wcs.root2Ref = {200, 300, 0, 0, 0, 0};
         cfg->wcsList.append(wcs);
     }
@@ -101,9 +103,9 @@ DemoUi::DemoUi(QWidget *parent) : QWidget(parent)
     connect(m_simTimer, SIGNAL(timeout()), this, SLOT(OnSimTimer()));
     connect(m_simCb, SIGNAL(toggled(bool)), this, SLOT(OnSimToggled(bool)));
 
-    AddLog(QStringLiteral("=== 机械臂 3D 显示模块移植 Demo ==="));
-    AddLog(QStringLiteral("模型路径: %1").arg(QFileInfo("robotType/" + QString(kRobotTypes[0])).absoluteFilePath()));
-    AddLog(QStringLiteral("已载入机型 %1，请用右侧面板操作（鼠标左键拖拽=旋转，切到平移模式=移动）")
+    AddLog(QString::fromUtf8("=== 机械臂 3D 显示模块移植 Demo ==="));
+    AddLog(QString::fromUtf8("模型路径: %1").arg(QFileInfo("robotType/" + QString(kRobotTypes[0])).absoluteFilePath()));
+    AddLog(QString::fromUtf8("已载入机型 %1，请用右侧面板操作（鼠标左键拖拽=旋转，切到平移模式=移动）")
            .arg(kRobotTypes[0]));
 
     // 5. 延迟到窗口显示、OpenGL 初始化完成后再灌入第一批位置数据
@@ -122,7 +124,7 @@ QWidget *DemoUi::BuildControlPanel()
     layout->setMargin(4);
 
     // ------------------------------ 机型 ------------------------------
-    QGroupBox *typeBox = new QGroupBox(QStringLiteral("机型 / 模型"), panel);
+    QGroupBox *typeBox = new QGroupBox(QString::fromUtf8("机型 / 模型"), panel);
     QFormLayout *typeForm = new QFormLayout(typeBox);
     m_robotTypeCb = new QComboBox(typeBox);
     for (unsigned i = 0; i < sizeof(kRobotTypes) / sizeof(kRobotTypes[0]); ++i) {
@@ -130,11 +132,11 @@ QWidget *DemoUi::BuildControlPanel()
     }
     m_robotTypeCb->setCurrentIndex(0);
     connect(m_robotTypeCb, SIGNAL(currentIndexChanged(int)), this, SLOT(OnRobotTypeChanged(int)));
-    typeForm->addRow(QStringLiteral("机型:"), m_robotTypeCb);
+    typeForm->addRow(QString::fromUtf8("机型:"), m_robotTypeCb);
     layout->addWidget(typeBox);
 
     // ------------------------------ 关节 ------------------------------
-    QGroupBox *jointBox = new QGroupBox(QStringLiteral("关节角度 (度)"), panel);
+    QGroupBox *jointBox = new QGroupBox(QString::fromUtf8("关节角度 (度)"), panel);
     QVBoxLayout *jointLayout = new QVBoxLayout(jointBox);
     for (int i = 0; i < ROB_AXIS_NUM; ++i) {
         QHBoxLayout *row = new QHBoxLayout();
@@ -156,15 +158,15 @@ QWidget *DemoUi::BuildControlPanel()
 
         connect(m_jointSlider[i], SIGNAL(valueChanged(int)), this, SLOT(OnJointSliderChanged()));
     }
-    QPushButton *resetPb = new QPushButton(QStringLiteral("关节归零"), jointBox);
+    QPushButton *resetPb = new QPushButton(QString::fromUtf8("关节归零"), jointBox);
     connect(resetPb, SIGNAL(clicked()), this, SLOT(OnResetJoint()));
     jointLayout->addWidget(resetPb);
     layout->addWidget(jointBox);
 
     // ---------------------------- 运动模拟 ----------------------------
-    QGroupBox *simBox = new QGroupBox(QStringLiteral("运动模拟 / 位姿"), panel);
+    QGroupBox *simBox = new QGroupBox(QString::fromUtf8("运动模拟 / 位姿"), panel);
     QVBoxLayout *simLayout = new QVBoxLayout(simBox);
-    m_simCb = new QCheckBox(QStringLiteral("启动正弦摆动模拟"), simBox);
+    m_simCb = new QCheckBox(QString::fromUtf8("启动正弦摆动模拟"), simBox);
     simLayout->addWidget(m_simCb);
 
     m_poseLabel = new QLabel(simBox);
@@ -179,14 +181,14 @@ QWidget *DemoUi::BuildControlPanel()
     layout->addWidget(simBox);
 
     // ---------------------------- 显示项 ------------------------------
-    QGroupBox *dispBox = new QGroupBox(QStringLiteral("显示项 (SetShowType 位标志)"), panel);
+    QGroupBox *dispBox = new QGroupBox(QString::fromUtf8("显示项 (SetShowType 位标志)"), panel);
     QVBoxLayout *dispLayout = new QVBoxLayout(dispBox);
 
-    m_coordSysCb = new QCheckBox(QStringLiteral("坐标系"), dispBox);
+    m_coordSysCb = new QCheckBox(QString::fromUtf8("坐标系"), dispBox);
     m_coordSysCb->setChecked(true);
-    m_waypointCb = new QCheckBox(QStringLiteral("路点"), dispBox);
-    m_pathCb = new QCheckBox(QStringLiteral("路点轨迹"), dispBox);
-    m_toolCb = new QCheckBox(QStringLiteral("末端工具"), dispBox);
+    m_waypointCb = new QCheckBox(QString::fromUtf8("路点"), dispBox);
+    m_pathCb = new QCheckBox(QString::fromUtf8("路点轨迹"), dispBox);
+    m_toolCb = new QCheckBox(QString::fromUtf8("末端工具"), dispBox);
     dispLayout->addWidget(m_coordSysCb);
     dispLayout->addWidget(m_waypointCb);
     dispLayout->addWidget(m_pathCb);
@@ -197,12 +199,12 @@ QWidget *DemoUi::BuildControlPanel()
     connect(m_toolCb, SIGNAL(clicked()), this, SLOT(OnDisplayFlagChanged()));
 
     m_coordSysSelectCb = new QComboBox(dispBox);
-    m_coordSysSelectCb->addItem(QStringLiteral("基坐标系 (b_0)"), QString("b_0"));
-    m_coordSysSelectCb->addItem(QStringLiteral("工具坐标系 (t_0)"), QString("t_0"));
-    m_coordSysSelectCb->addItem(QStringLiteral("用户坐标系1 (p_0)"), QString("p_0"));
-    m_coordSysSelectCb->addItem(QStringLiteral("工件坐标系1 (wcs_0)"), QString("wcs_0"));
+    m_coordSysSelectCb->addItem(QString::fromUtf8("基坐标系 (b_0)"), QString("b_0"));
+    m_coordSysSelectCb->addItem(QString::fromUtf8("工具坐标系 (t_0)"), QString("t_0"));
+    m_coordSysSelectCb->addItem(QString::fromUtf8("用户坐标系1 (p_0)"), QString("p_0"));
+    m_coordSysSelectCb->addItem(QString::fromUtf8("工件坐标系1 (wcs_0)"), QString("wcs_0"));
     connect(m_coordSysSelectCb, SIGNAL(currentIndexChanged(int)), this, SLOT(OnCoordSysChanged(int)));
-    dispLayout->addWidget(new QLabel(QStringLiteral("Jog 坐标系:"), dispBox));
+    dispLayout->addWidget(new QLabel(QString::fromUtf8("Jog 坐标系:"), dispBox));
     dispLayout->addWidget(m_coordSysSelectCb);
     layout->addWidget(dispBox);
 
@@ -223,11 +225,11 @@ void DemoUi::RefreshPoseLabels()
     DemoDataHub *hub = DemoDataHub::GetInstance();
     const Pose &p = hub->currentPose;
 
-    m_poseLabel->setText(QStringLiteral("当前位姿 (baseInWorld 坐标系, mm/deg)\n"
+    m_poseLabel->setText(QString::fromUtf8("当前位姿 (baseInWorld 坐标系, mm/deg)\n"
                                         "X = %1\nY = %2\nZ = %3\nRx = %4\nRy = %5\nRz = %6")
                          .arg(p.X, 0, 'f', 2).arg(p.Y, 0, 'f', 2).arg(p.Z, 0, 'f', 2)
                          .arg(p.Rx, 0, 'f', 3).arg(p.Ry, 0, 'f', 3).arg(p.Rz, 0, 'f', 3));
-    m_speedLabel->setText(QStringLiteral("TCP 速度: %1 mm/s").arg(hub->curTcpSpeed, 0, 'f', 1));
+    m_speedLabel->setText(QString::fromUtf8("TCP 速度: %1 mm/s").arg(hub->curTcpSpeed, 0, 'f', 1));
 }
 
 void DemoUi::ApplyJointFromSliders()
@@ -268,7 +270,7 @@ void DemoUi::OnResetJoint()
     }
     m_updatingSliders = false;
     ApplyJointFromSliders();
-    AddLog(QStringLiteral("关节已归零，正解位姿已刷新"));
+    AddLog(QString::fromUtf8("关节已归零，正解位姿已刷新"));
 }
 
 void DemoUi::OnSimTimer()
@@ -299,10 +301,10 @@ void DemoUi::OnSimToggled(bool checked)
 {
     if (checked) {
         m_simTimer->start();
-        AddLog(QStringLiteral("开始运动模拟"));
+        AddLog(QString::fromUtf8("开始运动模拟"));
     } else {
         m_simTimer->stop();
-        AddLog(QStringLiteral("停止运动模拟"));
+        AddLog(QString::fromUtf8("停止运动模拟"));
     }
 }
 
@@ -323,7 +325,7 @@ void DemoUi::OnCoordSysChanged(int index)
         innerCb->blockSignals(false);
     }
     m_glWidget->UpdateCoordSysChange_slot(index);
-    AddLog(QStringLiteral("切换 Jog 坐标系: %1").arg(id));
+    AddLog(QString::fromUtf8("切换 Jog 坐标系: %1").arg(id));
 }
 
 void DemoUi::OnRobotTypeChanged(int index)
@@ -333,7 +335,7 @@ void DemoUi::OnRobotTypeChanged(int index)
 
     DemoDataHub *hub = DemoDataHub::GetInstance();
     if (!hub->LoadRobotType(typeName, QStringLiteral("robotType"))) {
-        AddLog(QStringLiteral("载入机型失败: %1（请确认 robotType/%1 目录存在）").arg(typeName));
+        AddLog(QString::fromUtf8("载入机型失败: %1（请确认 robotType/%1 目录存在）").arg(typeName));
         return;
     }
 
@@ -345,7 +347,7 @@ void DemoUi::OnRobotTypeChanged(int index)
     Robot3dControlWidget::GetInstance()->UpdateRobot3dToolPosition(hub->currentPose);
     Robot3dControlWidget::GetInstance()->ResizeRobot3dMode();
     RefreshPoseLabels();
-    AddLog(QStringLiteral("切换机型: %1").arg(typeName));
+    AddLog(QString::fromUtf8("切换机型: %1").arg(typeName));
 }
 
 void DemoUi::OnDisplayFlagChanged()
@@ -367,7 +369,7 @@ void DemoUi::OnDisplayFlagChanged()
     m_glWidget->toolShowSignal         = m_toolCb->isChecked();
     m_glWidget->update();
 
-    AddLog(QStringLiteral("显示项更新: 坐标系=%1 路点=%2 轨迹=%3 工具=%4")
+    AddLog(QString::fromUtf8("显示项更新: 坐标系=%1 路点=%2 轨迹=%3 工具=%4")
            .arg(m_coordSysCb->isChecked()).arg(m_waypointCb->isChecked())
            .arg(m_pathCb->isChecked()).arg(m_toolCb->isChecked()));
 }
@@ -390,7 +392,7 @@ void DemoUi::OnCheckDump()
         const QImage startImg = m_glWidget->grabFramebuffer();
         if (!startImg.isNull()) {
             startImg.save(QString::fromLocal8Bit(startName));
-            AddLog(QStringLiteral("已导出初始位姿帧: %1").arg(QString::fromLocal8Bit(startName)));
+            AddLog(QString::fromUtf8("已导出初始位姿帧: %1").arg(QString::fromLocal8Bit(startName)));
         }
     }
 
@@ -404,12 +406,12 @@ void DemoUi::OnCheckDump()
         }
         Robot3dControlWidget::GetInstance()->UpdateRobot3dJointAngle(hub->currentJointPose);
         Robot3dControlWidget::GetInstance()->UpdateRobot3dToolPosition(hub->currentPose);
-        AddLog(QStringLiteral("已推进 %1 步模拟，关节角: %2, %3, %4, %5, %6, %7")
+        AddLog(QString::fromUtf8("已推进 %1 步模拟，关节角: %2, %3, %4, %5, %6, %7")
                .arg(steps)
                .arg(hub->currentJointPose.L1, 0, 'f', 2).arg(hub->currentJointPose.L2, 0, 'f', 2)
                .arg(hub->currentJointPose.L3, 0, 'f', 2).arg(hub->currentJointPose.L4, 0, 'f', 2)
                .arg(hub->currentJointPose.L5, 0, 'f', 2).arg(hub->currentJointPose.L6, 0, 'f', 2));
-        AddLog(QStringLiteral("正解 TCP: X=%1 Y=%2 Z=%3")
+        AddLog(QString::fromUtf8("正解 TCP: X=%1 Y=%2 Z=%3")
                .arg(hub->currentPose.X, 0, 'f', 2)
                .arg(hub->currentPose.Y, 0, 'f', 2)
                .arg(hub->currentPose.Z, 0, 'f', 2));
@@ -420,10 +422,10 @@ void DemoUi::OnCheckDump()
     const QImage img = m_glWidget->grabFramebuffer();
     if (!img.isNull()) {
         const bool ok = img.save(QString::fromLocal8Bit(dump));
-        AddLog(QStringLiteral("已导出 3D 帧缓冲: %1 (成功=%2, %3x%4)")
+        AddLog(QString::fromUtf8("已导出 3D 帧缓冲: %1 (成功=%2, %3x%4)")
                .arg(QString::fromLocal8Bit(dump)).arg(ok).arg(img.width()).arg(img.height()));
     } else {
-        AddLog(QStringLiteral("导出 3D 帧缓冲失败: grabFramebuffer 返回空图像"));
+        AddLog(QString::fromUtf8("导出 3D 帧缓冲失败: grabFramebuffer 返回空图像"));
     }
     QTimer::singleShot(300, qApp, SLOT(quit()));
 }

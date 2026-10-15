@@ -1,5 +1,8 @@
 # 机械臂 3D 显示模块 —— 独立移植 Demo
 
+> 当前 Windows 构建入口：**Qt 5.9.9 + MSVC2015 x64 + CMake**。
+> VS Code 的 Debug / Release 编译、运行、调试说明见 [.vscode/README.md](.vscode/README.md)。
+
 > 从示教器项目 `CGX-TP` 中把「机械臂 3D 模型显示」相关代码完整剥离出来，做成一个
 > **可独立编译、可运行、自包含** 的 Qt 工程。
 > 本目录既是移植成果，也是后续往其它项目移植的**参考实现与操作说明**。
@@ -53,28 +56,39 @@ demo/
 ├── robotType/                机型模型：G6L-3-20 / G6-1-1 / X20-1-3
 │   └── <机型>/model3d/*.obj + *.mtl，以及 config.xml（DH 参数来源）
 ├── assimp/include/           assimp 头文件
-├── assimp/lib/libassimp.dll.a  assimp MinGW 导入库
-├── bin/libassimp.dll         assimp 运行库
+├── assimp/MSVC2015_64/       当前使用的 Assimp x64 导入库与 DLL
+├── assimp/lib/libassimp.dll.a  历史 MinGW 32 位导入库（当前配置不使用）
+├── bin/libassimp.dll         历史 MinGW 32 位运行库（当前配置不使用）
 ├── demoui.h/.cpp             Demo 外壳界面（机型切换/关节滑条/运动模拟/显示项开关）
 ├── main.cpp                  入口（含 demo_debug.log 日志）
-├── demo.qrc / demo.pro       资源与工程文件
-├── build.bat                 ★ 一键构建（qmake + make + 部署运行库）
-├── run_demo.bat              ★ 启动脚本（自动切到 run/ 目录）
-└── run/                      运行目录（exe + DLL + robotType，构建脚本生成）
+├── demo.qrc                  资源清单
+├── CMakeLists.txt            ★ Qt 5.9.9 / MSVC2015 x64 构建入口
+└── .vscode/                  ★ Debug / Release 任务、调试配置与使用说明
 ```
 
 ---
 
 ## 三、快速开始
 
-```bat
-cd demo
-build.bat            :: 构建 + 部署到 run/
-run_demo.bat         :: 运行
+在 VS Code 中打开项目根目录，安装 Microsoft C/C++ 扩展：
+
+- **Ctrl+Shift+B**：默认构建 Debug；生成任务中也可选择 Build Release。
+- **F5**：选择 Debug 或 Release 调试，启动前自动构建。
+- **Ctrl+F5**：运行所选配置，不附加调试器。
+- “终端 → 运行任务”提供对应的 Run、Rebuild、Clean、Configure 任务。
+
+构建环境：**Qt 5.9.9 MSVC2015 64 位**、**Visual Studio 2015 v140 x64**、**CMake 3.20+**、**JOM**。
+任务脚本自动导入 VS2015 amd64 环境，不要求从开发者命令行启动 VS Code。
+
+两种版本的程序与 PDB 分别输出到：
+
+```text
+build/vscode-qt5.9.9-msvc2015_64/Debug/bin/
+build/vscode-qt5.9.9-msvc2015_64/Release/bin/
 ```
 
-构建环境（本机已验证）：**Qt 5.9.9 MinGW 32 位** + **MinGW 5.3.0 32 位** + **assimp 3.2(MinGW)**。
-路径写在 `build.bat` 顶部 `QT_DIR` / `MINGW_DIR`，换机器时改这两行即可。
+运行工作目录统一为 `build/vscode-qt5.9.9-msvc2015_64`；构建会自动复制 `robotType/`。
+详细工具链路径、命令行用法、依赖说明见 [.vscode/README.md](.vscode/README.md)。
 
 ---
 
@@ -162,7 +176,7 @@ GLSL 编译器会报 `illegal non-ASCII character (0xef/0xbb/0xbf)`，着色器�
 
 ---
 
-## 七、验证结果（本机实测）
+## 七、早期移植验证结果（MinGW 版本历史记录）
 
 | 项目 | 结果 |
 |---|---|
@@ -180,11 +194,12 @@ GLSL 编译器会报 `illegal non-ASCII character (0xef/0xbb/0xbf)`，着色器�
 复现命令：
 
 ```bat
-cd demo\run
+cd build\vscode-qt5.9.9-msvc2015_64
+set PATH=C:\Qt\Qt5.9.9\5.9.9\msvc2015_64\bin;%PATH%
 set DEMO_DUMP_START=frame_start.png
 set DEMO_DUMP_FRAME=frame_sim.png
 set DEMO_DUMP_SIMSTEPS=90
-robot3ddemo.exe
+Release\bin\robot3ddemo.exe
 ```
 
 （三个环境变量用于无人值守验证：先存初始帧 → 推进 n 步模拟 → 存结果帧 → 自动退出。）
@@ -201,8 +216,7 @@ robot3ddemo.exe
    * 或保留 `DemoDataHub` 名字，在其 setter 里桥接到目标项目的实时数据。
    需要提供的数据见第五节字段清单。
 4. **配资源**：把 shader 与图标加入 `.qrc`；把 `robotType/` 放到运行目录。
-5. **配工程**：`.pro` 中加 `QT += opengl widgets`、`INCLUDEPATH += <assimp include>`、
-   `LIBS += -L<assimp lib> -lassimp`。
+5. **配工程**：参考 `CMakeLists.txt` 查找 Qt 模块，加入源码和 `.qrc`，并配置目标平台对应的 Assimp 导入库、头文件及 DLL。
 6. **按约束初始化**：遵守第六节第 3 条的 ①→⑤ 顺序。
 
 ---
@@ -220,71 +234,12 @@ robot3ddemo.exe
 
 ---
 
-## 附：VS Code 无法 Ctrl+左键跳转的原因与修复
+## 附：VS Code 代码导航与构建配置
 
-### 结论（不是加密系统的问题）
+当前工程使用 `CMakeLists.txt` 和 `.vscode/` 中的 MSVC2015 x64 配置，旧 qmake / MinGW 构建脚本与工程文件已清理。
 
-本机装有透明文件级加密系统，项目源码（`.h/.cpp`）在磁盘上是密文（文件头 `88 7D 1C`）。
-但**加密不是跳转失败的原因**，已实测排除：用本工程同款 MinGW g++ 去 include
-密文的 `3dmodel/basegeometry.h`，预处理器能读到明文内容，报错是
-`fatal error: QOpenGLFunctions: No such file or directory`（只是在抱怨缺少 Qt 头文件路径），
-说明编译器这类白名单进程读到的就是明文。VS Code 同理——你能正常看到并编辑明文即为证据。
+`.vscode/c_cpp_properties.json` 提供 Debug / Release 两组 IntelliSense 配置，各自引用构建目录中的 `compile_commands.json`，并包含 Qt、Assimp、VC 与 Windows SDK 的头文件路径兜底。可以使用“C/C++: Select a Configuration”切换。
 
-### 真正的三层原因
+源码列表或依赖变动后，运行对应的 Build 或 Configure 任务即可重新生成编译数据库。CMake 直接导出完整 MSVC 编译参数，不再需要响应文件展开脚本。
 
-| 层 | 问题 | 后果 |
-|---|---|---|
-| 1 | 工程是 **qmake**（`demo.pro`），而 VS Code 的 C/C++ 扩展（cpptools）**不解析 `.pro`**；Qt 官方扩展（qt-cpp）也只认 CMake 和 `compile_commands.json` | 工程里的 `INCLUDEPATH`、`DEFINES` 对 IDE 完全不可见 |
-| 2 | 工程内既无 `compile_commands.json` 也无 `.vscode/`，cpptools 退化为"单文件默认模板" | `QtWidgets/*`、`assimp/*` 全部解析失败 → Qt 类型无定义 → 连带跳转失效 |
-| 3 | 用户级 `settings.json` 里 `qt-core.additionalQtPaths` 指向 `msvc2015_64`，与本工程实际使用的 **MinGW 32 位** 不符 | 即使扩展试图推断工具链，拿到的也是另一套 Qt |
-
-补充证据：修复前该项目的工作区缓存里**没有** cpptools 的符号库（`.browse.VC.db`），
-整个目录仅约 288 KB，说明 IntelliSense 从未在此工程成功建立过索引。
-
-### 修复方式（已落地）
-
-不替代原有 qmake 流程，而是新增一条并存的 CMake 入口，用途是产出编译数据库：
-
-```
-CMakeLists.txt                       新增，与 demo.pro 逐项对齐
-build-cmake/compile_commands.json    CMake 生成（已 gitignore）
-expand_compile_commands.py           展开响应文件（必需，见下）
-.vscode/c_cpp_properties.json        指向编译数据库 + Qt/assimp 头文件兜底
-.vscode/settings.json                排除 build/run 目录，避免无谓索引
-```
-
-### 为什么需要 expand_compile_commands.py
-
-CMake 的 MinGW Makefiles 生成器会把 include 路径塞进 `@CMakeFiles/.../includes_CXX.rsp`
-响应文件（`CMAKE_CXX_USE_RESPONSE_FILE_FOR_INCLUDES=OFF` 对该生成器无效，已实测）。
-cpptools 不解析响应文件，若不展开则 Qt 头文件依然找不到。故配置后需展开一次。
-
-### 日常使用
-
-`build-cmake/` 是可删除的生成目录。清理该目录或改动源文件列表、依赖后，执行以下命令重新生成索引：
-
-```bat
-cmake -S . -B build-cmake -G "MinGW Makefiles" ^
-      -DCMAKE_PREFIX_PATH=C:/Qt/Qt5.9.9/5.9.9/mingw53_32 ^
-      -DCMAKE_BUILD_TYPE=Debug
-python expand_compile_commands.py build-cmake
-```
-
-然后 VS Code 执行 `Ctrl+Shift+P` → `C/C++: Reset IntelliSense Database`，
-（或 `Developer: Reload Window`）即可恢复跳转与补全。
-
-用 CMake 构建（可选，替代 build.bat）：
-
-```bat
-cmake --build build-cmake -j 4
-```
-
-注意：程序用相对路径 `./robotType/<机型>/...` 加载模型，因此必须在 `run/`
-目录下启动 `robot3ddemo.exe`（CMake 已把 exe 输出到 `run/`）。
-两个构建入口共用同一个 `run/` 目录，切换时建议用 `windeployqt` 补全运行时 DLL。
-
-### 如果只想手动配置（不引入 CMake）
-
-删除 `.vscode/c_cpp_properties.json` 里的 `compileCommands` 一行即可——
-该文件中的 `includePath` / `defines` / `compilerPath` 是独立可用的兜底配置
-（但缺少每个文件的精确宏，遇到条件编译分支时不如编译数据库准确）。
+如需重置索引，执行“C/C++: Reset IntelliSense Database”。完整操作与工具链路径见 [.vscode/README.md](.vscode/README.md)。
