@@ -8,6 +8,9 @@
 class RobotViewport;
 class QSlider;
 class QCheckBox;
+#ifdef ROBOT3D_WITH_VTK
+class PointCloudDialog;
+#endif
 namespace robot3d { namespace composition { class Robot3dComposition; } }
 class DemoUi : public QWidget, public robot3d::presentation::IRobot3dView {
     Q_OBJECT
@@ -29,6 +32,9 @@ private slots:
     void OnFramePresented(qulonglong revision);
 private:
     QWidget* BuildControlPanel();
+#ifdef ROBOT3D_WITH_VTK
+    PointCloudDialog* pointCloudDialog_=nullptr;
+#endif
     void OnCheckDump();
     std::unique_ptr<robot3d::composition::Robot3dComposition> composition_;
     robot3d::presentation::Robot3dDisplayModel model_;

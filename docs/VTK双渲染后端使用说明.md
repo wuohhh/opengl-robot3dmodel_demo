@@ -4,6 +4,10 @@
 
 默认仍使用 OpenGL。启用 VTK 的构建中，右侧“渲染后端 / 效果对比”下拉框可以直接切换 OpenGL / VTK。切换保留机型、关节、显示选项、旋转、平移、缩放和安装视角备份，不会为了切换重新提交业务状态。模型准备失败时恢复原后端并显示错误。
 
+## 点云查看器
+
+启用 VTK 后，主界面右侧顶部的“点云查看器…”按钮可打开独立的 VTK 点云弹窗，支持 PCD、PLY、XYZ/TXT 文件与显示控制。格式范围、操作和实现位置见 [VTK 点云查看器](VTK点云查看器.md)。点云查看不要求切换机器人主视口的渲染后端。
+
 ## 构建
 
 VTK 9.3.1 虽然声明允许 v140，但本机实际编译在 vtkImplicitArray 的模板实例化处失败。本实现选择 9.2.6，避免修改 9.3.1 的隐式数组模板实现。9.2.6 的 Qt 依赖闭包还需要两处 v140 成员模板解析兼容修补：vtkDIYGhostUtilities.cxx 移除非依赖对象 QueryPointWorker 调用前多余的 template；同名 .txx 对 Impl 的调用仅在 _MSC_VER == 1900 时采用旧解析器写法，其他编译器保留标准语法。tools/patch-vtk-v140.py 会检查精确匹配、保留 BOM/换行并读回验证，构建脚本自动执行；不修改算法。依赖构建同时关闭 VTK_ENABLE_WRAPPING，避免新生成的头文件扫描工具读取透明加密文件；C++ 渲染功能不依赖该扫描。
@@ -25,11 +29,15 @@ VTK 9.3.1 虽然声明允许 v140，但本机实际编译在 vtkImplicitArray �
 .\.vscode\qt-msvc.ps1 -Configuration Release -Action Run -WithVTK
 ~~~
 
-源码默认放在项目 build/deps 下。依赖构建和临时编译目录可用 -BuildRoot 指定，例如 -BuildRoot 'X:\robot3d-vtk-deps'；成功后会记录 SDK 路径，应用构建可自动找到。首次编译需要预留数 GB 空间，建议本机使用 -Jobs 3。
+源码默认放在项目 build/deps 下。依赖构建和临时编译目录可用 -BuildRoot 指定，例如 -BuildRoot 'X:\robot3d-vtk-deps'；Debug / Release 分别记录到 build/deps/vtk-build-root-配置.json，编译中断后可从原目录继续；成功后还会记录 SDK 路径，应用构建可自动找到。首次编译需要预留数 GB 空间，建议本机使用 -Jobs 3。
 
 Debug 使用相同命令，将 Release 换为 Debug；VTK Debug / Release SDK 分开构建，匹配 /MDd 与 /MD。已有自建 SDK 时，可增加 -VtkDir 参数指向 vtk-config.cmake 所在目录。
 
-VS Code 任务增加了 VTK dependency、VTK comparison 的构建/运行入口。调试配置“VTK comparison”从 VTK 后端启动。首次运行前先构建对应配置的依赖。
+在 VS Code 中直接执行“VTK comparison: Build Debug”即可构建 VTK Debug 应用；任务会先执行“VTK dependency: Build Debug”准备缺失的 SDK。依赖任务使用 -IfMissing，SDK 已安装且配置、头文件及关键 DLL / 导入库存在时直接复用。Release 任务采用相同的依赖关系。
+
+按 F5 时选择“VTK comparison - Debug”，会先完成上述构建链再从 VTK 后端启动。原 OpenGL 默认构建任务保留。
+
+若要重新编译 VTK SDK，直接运行 tools/build-vtk.ps1 -Configuration Debug（不带 -IfMissing）。首次构建需要可写且空间充足的依赖目录；可用 -BuildRoot 指定，源码仍保留在项目 build/deps。
 
 主要输出：
 
@@ -95,7 +103,15 @@ VTK 连杆使用真实 aiFace 索引生成 PolyData，模型准备时构建静�
 
 本机实际创建 OpenGL 3.2 CompatibilityProfile，显卡 Intel Iris Xe。已目视检查对比图，模型位置和轮廓对齐，光照及表面细节存在差异。独立导帧结果位于 build/vtk-export-validation；原图可直接打开比较。
 
-VTK Debug SDK 尚未构建或验证；本次未进行性能基准，也未验证升级工具链路线。
+2026-10-19 已补充完成 Debug 验证：
+
+- VTK 9.2.6 Debug SDK 与应用均使用 MSVC2015 x64，SDK 的编译参数包含 /MDd、/Zi、/Od，应用及 VTK 的 PDB 已生成。
+- 读取 tasks.json 中的实际命令执行“VTK comparison: Build Debug”任务链成功；依赖检查直接复用已安装 SDK，不再重复编译 VTK。
+- Debug CTest 4/4 组通过：点云文件 35 项、MVP 52 项、GUI 38 项、VTK 79 项，共 204 项检查。
+- 使用 F5 配置中的环境启动 Debug 程序，VTK 后端完成 G6L-3-20 的 30 步模拟、PNG / JSON 导出并正常退出。导帧结果位于 build/vscode-qt5.9.9-msvc2015_64-vtk/Debug/launch-validation。
+- 本机 Debug SDK 安装在 build/deps/vtk-9.2.6-v140-Debug/install，已记录对应路径；没有使用 X 盘。
+
+本次未进行性能基准，也未验证升级工具链路线。
 
 ## 文件存储
 

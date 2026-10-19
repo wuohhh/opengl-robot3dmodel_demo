@@ -44,6 +44,11 @@ int main(int argc,char** argv) {
             require(view.model.state.configuration->id=="G6L-3-20","first frame model");
             viewport->update(); const int before=frames; waitFor([&]{return frames>before;});
             require(!viewport->grabFramebuffer().isNull(),"first frame valid");
+            auto* cloudButton=view.findChild<QPushButton*>("pointCloudButton");
+            require(cloudButton!=nullptr,"point cloud entry exists");
+#ifndef ROBOT3D_WITH_VTK
+            require(!cloudButton->isEnabled()&&!cloudButton->toolTip().isEmpty(),"OpenGL-only build explains VTK requirement");
+#endif
             if(pass==1) { view.close(); continue; }
             view.grab().save(output.filePath("mvp-window.png"));
             std::cout<<"Window "<<view.width()<<"x"<<view.height()<<" viewport "<<viewport->width()<<"x"<<viewport->height()<<"\n";

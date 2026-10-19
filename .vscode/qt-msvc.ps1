@@ -4,6 +4,7 @@ param(
     [string]$Configuration = 'Debug',
     [ValidateSet('Configure', 'Build', 'Rebuild', 'Clean', 'Run')]
     [string]$Action = 'Build',
+    # Retain the legacy argument for existing command lines; VTK is always enabled.
     [switch]$WithVTK,
     [string]$VtkDir = '',
     [ValidateRange(1, 64)]
@@ -19,7 +20,7 @@ $vcVarsAll = 'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.b
 $jom = 'C:\Qt\Qt5.9.9\Tools\QtCreator\bin\jom.exe'
 $cmake = 'C:\CMake\bin\cmake.exe'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$runName = if ($WithVTK) { 'build\vscode-qt5.9.9-msvc2015_64-vtk' } else { 'build\vscode-qt5.9.9-msvc2015_64' }
+$runName = 'build\vscode-qt5.9.9-msvc2015_64-vtk'
 $runDir = Join-Path $projectRoot $runName
 $buildDir = Join-Path $runDir $Configuration
 $program = Join-Path $buildDir 'bin\robot3ddemo.exe'
@@ -60,6 +61,7 @@ try {
         $env:QT_QPA_PLATFORM_PLUGIN_PATH = Join-Path $qtRoot 'plugins\platforms'
         # Qt 5.9 shader binary caches crash this machine's Intel OpenGL driver.
         $env:QT_DISABLE_SHADER_DISK_CACHE = '1'
+        $env:DEMO_RENDERER = 'vtk'
         Push-Location $runDir
         try { Invoke-Checked $program @() } finally { Pop-Location }
         exit 0
@@ -84,18 +86,16 @@ try {
         "-DROBOT3D_QT_ROOT:PATH=$qtRoot",
         "-DROBOT3D_RUNTIME_DIR:PATH=$runDir"
     )
-    if ($WithVTK) {
-        if (-not $VtkDir) {
-            $vtkMetadata=Join-Path $projectRoot "build\deps\vtk-sdk-$Configuration.json"
-            if(Test-Path -LiteralPath $vtkMetadata) { $VtkDir=(Get-Content -LiteralPath $vtkMetadata -Raw -Encoding UTF8 | ConvertFrom-Json).vtkDir }
-            else { $VtkDir = Join-Path $projectRoot "build\deps\vtk-9.2.6-v140-$Configuration\install\lib\cmake\vtk-9.2" }
-        }
-        if (-not (Test-Path -LiteralPath (Join-Path $VtkDir 'vtk-config.cmake'))) {
-            throw "VTK SDK not found: $VtkDir. Run tools/build-vtk.ps1 -Configuration $Configuration first, or specify -VtkDir."
-        }
-        $configureArgs += @('-DROBOT3D_WITH_VTK=ON', "-DVTK_DIR:PATH=$VtkDir")
-    } else { $configureArgs += '-DROBOT3D_WITH_VTK=OFF' }
-    Write-Host "Configuring Qt $version / MSVC2015 x64 / $Configuration (VTK=$WithVTK)"
+    if (-not $VtkDir) {
+        $vtkMetadata=Join-Path $projectRoot "build\deps\vtk-sdk-$Configuration.json"
+        if(Test-Path -LiteralPath $vtkMetadata) { $VtkDir=(Get-Content -LiteralPath $vtkMetadata -Raw -Encoding UTF8 | ConvertFrom-Json).vtkDir }
+        else { $VtkDir = Join-Path $projectRoot "build\deps\vtk-9.2.6-v140-$Configuration\install\lib\cmake\vtk-9.2" }
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $VtkDir 'vtk-config.cmake'))) {
+        throw "VTK SDK not found: $VtkDir. Run tools/build-vtk.ps1 -Configuration $Configuration first, or specify -VtkDir."
+    }
+    $configureArgs += @('-DROBOT3D_WITH_VTK=ON', "-DVTK_DIR:PATH=$VtkDir")
+    Write-Host "Configuring VTK $Configuration / Qt $version / MSVC2015 x64"
     Invoke-Checked $cmake $configureArgs
     if ($Action -eq 'Configure') { exit 0 }
 

@@ -25,6 +25,9 @@
 #include <QEvent>
 #include <QEventLoop>
 #include <QScopedValueRollback>
+#ifdef ROBOT3D_WITH_VTK
+#include "robot3d/presentation/PointCloudDialog.h"
+#endif
 namespace { const char* kRobotTypes[]={"G6L-3-20","G6-1-1","X20-1-3"}; }
 DemoUi::DemoUi(QWidget* parent) : QWidget(parent) {
     setWindowTitle(QString::fromUtf8("CGX-TP 机械臂 3D 显示模块 —— MVP Demo"));
@@ -127,6 +130,19 @@ QWidget *DemoUi::BuildControlPanel()
     QWidget *panel = new QWidget(this);
     QVBoxLayout *layout = new QVBoxLayout(panel);
     layout->setMargin(4);
+    auto* pointCloudButton=new QPushButton(QString::fromUtf8("点云查看器…"),panel);
+    pointCloudButton->setObjectName("pointCloudButton");
+    pointCloudButton->setMinimumHeight(32);
+#ifdef ROBOT3D_WITH_VTK
+    connect(pointCloudButton,&QPushButton::clicked,this,[this] {
+        if(!pointCloudDialog_) pointCloudDialog_=new PointCloudDialog(this);
+        pointCloudDialog_->show(); pointCloudDialog_->raise(); pointCloudDialog_->activateWindow();
+    });
+#else
+    pointCloudButton->setEnabled(false);
+    pointCloudButton->setToolTip(QString::fromUtf8("点云查看器需要启用 VTK，请使用 -WithVTK 构建并运行。"));
+#endif
+    layout->addWidget(pointCloudButton);
 
     // ------------------------------ 机型 ------------------------------
     QGroupBox* renderBox=new QGroupBox(QString::fromUtf8("渲染后端 / 效果对比"),panel);

@@ -5,68 +5,6 @@
             "name": "Qt 5.9.9 MSVC2015 x64 - Debug",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/vscode-qt5.9.9-msvc2015_64/Debug/bin/robot3ddemo.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/vscode-qt5.9.9-msvc2015_64",
-            "environment": [
-                {
-                    "name": "PATH",
-                    "value": "C:/Qt/Qt5.9.9/5.9.9/msvc2015_64/bin;${env:PATH}"
-                },
-                {
-                    "name": "QT_PLUGIN_PATH",
-                    "value": "C:/Qt/Qt5.9.9/5.9.9/msvc2015_64/plugins"
-                },
-                {
-                    "name": "QT_QPA_PLATFORM_PLUGIN_PATH",
-                    "value": "C:/Qt/Qt5.9.9/5.9.9/msvc2015_64/plugins/platforms"
-                },
-                {
-                    "name": "QT_DISABLE_SHADER_DISK_CACHE",
-                    "value": "1"
-                }
-            ],
-            "console": "internalConsole",
-            "symbolSearchPath": "${workspaceFolder}/build/vscode-qt5.9.9-msvc2015_64/Debug/bin",
-            "requireExactSource": true,
-            "preLaunchTask": "Qt 5.9.9 MSVC2015 x64: Build Debug"
-        },
-        {
-            "name": "Qt 5.9.9 MSVC2015 x64 - Release",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/vscode-qt5.9.9-msvc2015_64/Release/bin/robot3ddemo.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/vscode-qt5.9.9-msvc2015_64",
-            "environment": [
-                {
-                    "name": "PATH",
-                    "value": "C:/Qt/Qt5.9.9/5.9.9/msvc2015_64/bin;${env:PATH}"
-                },
-                {
-                    "name": "QT_PLUGIN_PATH",
-                    "value": "C:/Qt/Qt5.9.9/5.9.9/msvc2015_64/plugins"
-                },
-                {
-                    "name": "QT_QPA_PLATFORM_PLUGIN_PATH",
-                    "value": "C:/Qt/Qt5.9.9/5.9.9/msvc2015_64/plugins/platforms"
-                },
-                {
-                    "name": "QT_DISABLE_SHADER_DISK_CACHE",
-                    "value": "1"
-                }
-            ],
-            "console": "internalConsole",
-            "symbolSearchPath": "${workspaceFolder}/build/vscode-qt5.9.9-msvc2015_64/Release/bin",
-            "requireExactSource": true,
-            "preLaunchTask": "Qt 5.9.9 MSVC2015 x64: Build Release"
-        },
-        {
-            "name": "VTK comparison - Debug",
-            "type": "cppvsdbg",
-            "request": "launch",
             "program": "${workspaceFolder}/build/vscode-qt5.9.9-msvc2015_64-vtk/Debug/bin/robot3ddemo.exe",
             "args": [],
             "stopAtEntry": false,
@@ -96,10 +34,10 @@
             "console": "internalConsole",
             "symbolSearchPath": "${workspaceFolder}/build/vscode-qt5.9.9-msvc2015_64-vtk/Debug/bin",
             "requireExactSource": true,
-            "preLaunchTask": "VTK comparison: Build Debug"
+            "preLaunchTask": "VTK: Build Debug"
         },
         {
-            "name": "VTK comparison - Release",
+            "name": "Qt 5.9.9 MSVC2015 x64 - Release",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/vscode-qt5.9.9-msvc2015_64-vtk/Release/bin/robot3ddemo.exe",
@@ -131,7 +69,7 @@
             "console": "internalConsole",
             "symbolSearchPath": "${workspaceFolder}/build/vscode-qt5.9.9-msvc2015_64-vtk/Release/bin",
             "requireExactSource": true,
-            "preLaunchTask": "VTK comparison: Build Release"
+            "preLaunchTask": "VTK: Build Release"
         }
     ]
 }

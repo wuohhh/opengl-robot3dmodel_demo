@@ -1,37 +1,37 @@
-# Qt 5.9.9 / MSVC2015 x64 开发配置
+# VTK / Qt 5.9.9 / MSVC2015 x64 开发配置
 
-本工程以根目录的 `CMakeLists.txt` 为构建入口，不需要 .pro 文件。任务脚本会加载 VS2015 的 amd64 环境，使用 CMake + JOM 编译，并准备模型和 Assimp DLL。
+本工程以根目录的 `CMakeLists.txt` 为构建入口，不需要 .pro 文件。任务脚本会加载 VS2015 的 amd64 环境，统一启用 VTK，使用 CMake + JOM 编译，并准备模型、Assimp 和 VTK DLL。
 
 ## 在 VS Code 中使用
 
 | 操作 | 入口 |
 |---|---|
-| 编译 Debug | Ctrl+Shift+B（默认构建任务） |
-| 编译 Release | “终端 → 运行生成任务”选择 Build Release |
-| 调试 | F5，选择 Debug 或 Release，自动先构建 |
-| 不附加调试器运行 | Ctrl+F5，或“终端 → 运行任务”选择 Run Debug / Run Release |
-| 重新构建 | Rebuild Debug / Rebuild Release |
-| 清理生成文件 | Clean Debug / Clean Release |
-| 仅配置 CMake | Configure Debug / Configure Release |
+| 编译 Debug | Ctrl+Shift+B（默认任务 VTK: Build Debug） |
+| 编译 Release | “终端 → 运行生成任务”选择 VTK: Build Release |
+| 调试 | F5，选择 VTK Debug 或 VTK Release，自动先构建 |
+| 不附加调试器运行 | Ctrl+F5，或“终端 → 运行任务”选择 VTK: Run Debug / VTK: Run Release |
+| 重新构建 | VTK: Rebuild Debug / VTK: Rebuild Release |
+| 清理生成文件 | VTK: Clean Debug / VTK: Clean Release |
+| 仅配置 CMake | VTK: Configure Debug / VTK: Configure Release |
 
 需安装 Microsoft C/C++ 扩展（ms-vscode.cpptools）。首次打开可接受工作区的扩展推荐。
 
-`c_cpp_properties.json` 提供 Debug / Release 两组 IntelliSense 配置，可用“C/C++: Select a Configuration”切换；各自读取对应编译数据库，并提供本机头文件路径兜底。实际编译参数由 CMake 决定。
+`c_cpp_properties.json` 提供 VTK Debug / VTK Release 两组 IntelliSense 配置，可用“C/C++: Select a Configuration”切换；各自读取对应编译数据库，并提供本机头文件路径兜底。实际编译参数由 CMake 决定。
 
 ## 输出与工作目录
 
 ```text
-build/vscode-qt5.9.9-msvc2015_64/
+build/vscode-qt5.9.9-msvc2015_64-vtk/
 ├── Debug/
-│   ├── bin/robot3ddemo.exe、robot3ddemo.pdb、assimp-vc130-mt.dll
+│   ├── bin/robot3ddemo.exe、robot3ddemo.pdb、Assimp 与 VTK DLL
 │   └── compile_commands.json
 ├── Release/
-│   ├── bin/robot3ddemo.exe、robot3ddemo.pdb、assimp-vc130-mt.dll
+│   ├── bin/robot3ddemo.exe、robot3ddemo.pdb、Assimp 与 VTK DLL
 │   └── compile_commands.json
 └── robotType/                构建时复制的模型与 config.xml
 ```
 
-Run 任务、F5、Ctrl+F5 的工作目录统一为 `build/vscode-qt5.9.9-msvc2015_64`，与参考会话约定一致。程序相对路径 `./robotType/...` 从这里查找，运行日志也写在这里。两种配置分别使用 Qt Debug / Release DLL，Qt 插件通过环境变量从本机 Qt 安装目录加载。
+Run 任务、F5、Ctrl+F5 均设置 `DEMO_RENDERER=vtk`，工作目录统一为 `build/vscode-qt5.9.9-msvc2015_64-vtk`。程序相对路径 `./robotType/...` 从这里查找，运行日志也写在这里。两种配置分别使用 Qt Debug / Release DLL，Qt 插件通过环境变量从本机 Qt 安装目录加载。
 
 Debug 使用 /MDd 和调试符号；Release 使用 /MD、/O2 优化，并额外启用 /Zi 和 /DEBUG 生成 PDB。优化后的源码行可能被合并或移除，Release 下部分局部变量不可见。
 
@@ -55,15 +55,17 @@ Assimp 3.2 的 x64 包复制自本机原项目 `CGX-TP/CGX-TP/move3D/model3D/ass
 
 ## 命令行
 
-从项目根目录运行：
+从项目根目录运行（首次构建前先准备对应配置的 VTK SDK；VS Code 的 Build / Rebuild / Configure 任务会自动执行此依赖步骤）：
 
 ```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-vtk.ps1 -Configuration Debug -IfMissing
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-vtk.ps1 -Configuration Release -IfMissing
 powershell -NoProfile -ExecutionPolicy Bypass -File .vscode/qt-msvc.ps1 -Configuration Debug -Action Build
 powershell -NoProfile -ExecutionPolicy Bypass -File .vscode/qt-msvc.ps1 -Configuration Release -Action Build
 powershell -NoProfile -ExecutionPolicy Bypass -File .vscode/qt-msvc.ps1 -Configuration Debug -Action Run
 ```
 
-`-Action` 还支持 Configure、Rebuild、Clean；`-Jobs` 控制并行数（默认最多 4）。Clean 通过 CMake 清理该配置的编译产物，保留配置缓存和共用模型目录。
+脚本始终启用 VTK，兼容已有命令中的 `-WithVTK` 参数。`-Action` 还支持 Configure、Rebuild、Clean；`-Jobs` 控制并行数（默认最多 4）。Clean 通过 CMake 清理该配置的编译产物，保留配置缓存和共用模型目录。
 
 参考：[CMake 的 MSVC 运行库选择](https://cmake.org/cmake/help/v3.30/prop_tgt/MSVC_RUNTIME_LIBRARY.html)、[VS Code C++ 调试配置](https://code.visualstudio.com/docs/cpp/launch-json-reference)。
 
@@ -84,8 +86,22 @@ CMake 使用自身的头文件依赖扫描，避免中文版 VS2015 的 `/showIn
 当前构建将核心、基础设施、展示器、渲染和壳层编入独立库；原 Build/Run/F5 入口保持可用。默认同时生成 robot3d_mvp_tests 与 robot3d_gui_tests，可通过 CMake 的 ROBOT3D_BUILD_TESTS 选项关闭。
 
 ```powershell
-& 'C:\CMake\bin\ctest.exe' --test-dir build/vscode-qt5.9.9-msvc2015_64/Debug --output-on-failure
-& 'C:\CMake\bin\ctest.exe' --test-dir build/vscode-qt5.9.9-msvc2015_64/Release --output-on-failure
+& 'C:\CMake\bin\ctest.exe' --test-dir build/vscode-qt5.9.9-msvc2015_64-vtk/Debug --output-on-failure
+& 'C:\CMake\bin\ctest.exe' --test-dir build/vscode-qt5.9.9-msvc2015_64-vtk/Release --output-on-failure
 ```
 
 测试截图输出在各配置的 mvp-gui-validation/，GUI 测试使用真实桌面 OpenGL，不连接机器人。
+
+## VTK SDK 与调试
+
+Debug / Release 的 Build、Rebuild、Configure 任务会先执行对应的 **VTK dependency: Build Debug / Release**，自动构建缺失的 VTK SDK。依赖任务使用 `-IfMissing`，已安装 SDK 通过检查后直接复用。Run 任务先执行对应的 Build 任务。
+
+按 F5 时选择 **VTK Debug** 或 **VTK Release**，preLaunchTask 指向对应配置的构建链，并从 VTK 后端启动。Ctrl+Shift+B 对应 **VTK: Build Debug**。
+
+Debug 应用位于 `build/vscode-qt5.9.9-msvc2015_64-vtk/Debug/bin/robot3ddemo.exe`。SDK 构建目录由 `build/deps/vtk-build-root-Debug.json` 记录，安装路径由 `build/deps/vtk-sdk-Debug.json` 记录，均为本机生成文件。Debug 使用独立 SDK 和 /MDd，不复用 Release VTK 库。
+
+代码补全可通过“C/C++: Select a Configuration”选择 **VTK Debug** 或 **VTK Release**，使用对应的编译数据库和 VTK 头文件路径。
+
+完整用法见 [VTK 双后端说明](../docs/VTK双渲染后端使用说明.md)。
+
+2026-10-19 本机已执行上述 VTK Debug 构建任务链，SDK 复用检查与应用构建均通过；Debug CTest 4/4 组、204 项检查通过，程序使用 F5 配置中的环境完成 VTK 启动、30 步模拟与导帧。应用和 VTK 库的 PDB 已生成。

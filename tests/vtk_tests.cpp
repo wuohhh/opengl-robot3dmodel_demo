@@ -5,6 +5,14 @@
 #include <QComboBox>
 #include <QSlider>
 #include <QCheckBox>
+#include <QPushButton>
+#include <QLineEdit>
+#include <QSpinBox>
+#include <QLabel>
+#include <QFile>
+#include <QFileInfo>
+#include "robot3d/presentation/PointCloudDialog.h"
+#include "robot3d/rendering/vtk/VtkPointCloudViewport.h"
 #include <QEvent>
 #include <QOpenGLWidget>
 #include <QOpenGLContext>
@@ -148,7 +156,54 @@ int main(int argc,char** argv) {
             const auto previous=view.model.state.revision; waitFor([&] { return view.model.state.revision>previous; }); sim->click();
             require(!view.model.simulationRunning,"VTK simulation stops");
             view.hide(); view.show(); require(hasGeometry(viewport->capture()),"VTK survives hide/show");
-            require(failures==0,"no backend rendering errors"); view.close();
+            require(failures==0,"no backend rendering errors");
+            auto* cloudButton=view.findChild<QPushButton*>("pointCloudButton");
+            require(cloudButton&&cloudButton->isEnabled(),"right panel point cloud button"); cloudButton->click();
+            auto* dialog=view.findChild<PointCloudDialog*>(); auto* cloudViewport=dialog?dialog->findChild<VtkPointCloudViewport*>():nullptr;
+            require(dialog&&dialog->isVisible()&&cloudViewport,"point cloud dialog opens");
+            waitFor([&] { return cloudViewport->isRendererReady(); });
+            auto* cloudPath=dialog->findChild<QLineEdit*>("pointCloudFilePath"); auto* cloudLoad=dialog->findChild<QPushButton*>("pointCloudLoadButton");
+            const auto fixture=output.filePath(QString::fromUtf8("点云显示测试.xyz"));
+            QFile cloudFile(fixture); require(cloudFile.open(QIODevice::WriteOnly),"cloud fixture opens");
+            for(int y=-30;y<=30;++y) for(int x=-30;x<=30;++x) {
+                const auto row=QString("%1 %2 %3 %4 %5 %6\n").arg(x).arg(y).arg(8*std::sin(x*.15)*std::cos(y*.15))
+                    .arg((x+30)*4).arg((y+30)*4).arg(200).toUtf8();
+                if(cloudFile.write(row)!=row.size()) throw std::runtime_error("write cloud point");
+            }
+            cloudFile.close(); cloudPath->setText(fixture); cloudLoad->click();
+            require(dialog->isLoading()&&!cloudLoad->isEnabled(),"loading disables duplicate requests");
+            waitFor([&] { return !dialog->isLoading(); });
+            require(cloudViewport->pointCount()==3721&&dialog->loadedFile()==QFileInfo(fixture).absoluteFilePath(),"file loads into independent VTK cloud viewport");
+            auto* mode=dialog->findChild<QComboBox*>("pointCloudColorMode"); auto* size=dialog->findChild<QSpinBox*>("pointCloudPointSize");
+            mode->setCurrentIndex(0); size->setValue(4); auto cloudImage=cloudViewport->capture();
+            int cloudPixels=0;
+            for(int y=0;y<cloudImage.height();y+=2) for(int x=0;x<cloudImage.width();x+=2) {
+                const auto pixel=cloudImage.pixelColor(x,y);
+                if(pixel.blue()>120&&(pixel.red()>90||pixel.green()>90)) ++cloudPixels;
+            }
+            require(!cloudImage.isNull()&&cloudPixels>500,"VTK frame contains colored point cloud");
+            require(cloudImage.save(output.filePath("pointcloud-rgb.png")),"save point cloud frame");
+            auto* summary=dialog->findChild<QLabel*>("pointCloudSummary");
+            require(summary&&summary->text().contains(QString::fromUtf8("坐标范围"))&&summary->height()>=summary->fontMetrics().lineSpacing()*7,"cloud statistics fit without clipping");
+            QCoreApplication::sendPostedEvents(nullptr,QEvent::LayoutRequest); QCoreApplication::processEvents();
+            require(dialog->grab().save(output.filePath("pointcloud-dialog.png")),"save complete point cloud dialog");
+            auto* visible=dialog->findChild<QCheckBox*>("pointCloudVisibleCheck"); visible->setChecked(false);
+            require(cloudViewport->capture()!=cloudImage,"visibility changes rendered points"); visible->setChecked(true);
+            mode->setCurrentIndex(1); require(cloudViewport->capture()!=cloudImage,"uniform and file colors change rendered points");
+            dialog->findChild<QPushButton*>("pointCloudResetButton")->click();
+            const auto beforeFailedCloud=cloudViewport->capture(); cloudPath->setText(output.filePath("missing.pcd")); cloudLoad->click();
+            waitFor([&] { return !dialog->isLoading(); });
+            require(cloudViewport->pointCount()==3721&&cloudViewport->capture()==beforeFailedCloud,"failed load preserves current cloud and camera");
+            require(dialog->findChild<QLabel*>("pointCloudStatus")->text().contains(QString::fromUtf8("加载失败")),"load error is visible");
+            dialog->close(); cloudButton->click(); require(view.findChildren<PointCloudDialog*>().size()==1&&dialog->isVisible()&&cloudViewport->pointCount()==3721,"reopen reuses dialog and cloud");
+            dialog->findChild<QPushButton*>("pointCloudClearButton")->click();
+            require(cloudViewport->pointCount()==0&&dialog->loadedFile().isEmpty(),"clear releases cloud");
+            cloudPath->setText(fixture); cloudLoad->click(); dialog->close(); cloudButton->click();
+            waitFor([&] { return !dialog->isLoading(); });
+            require(cloudViewport->pointCount()==3721&&dialog->isVisible(),"reopen during background file load");
+            visible->setChecked(false); dialog->findChild<QPushButton*>("pointCloudResetButton")->click(); visible->setChecked(true);
+            require(!cloudViewport->capture().isNull(),"camera reset works while cloud hidden");
+            dialog->close(); view.close();
         }
         qputenv("DEMO_RENDERER","vtk");
         {
@@ -158,6 +213,14 @@ int main(int argc,char** argv) {
             require(hasGeometry(viewport->capture()),"VTK startup backend and window recreation");
             view.close();
         }
+        {
+            PointCloudDialog closing;
+            closing.show();
+            closing.findChild<QLineEdit*>("pointCloudFilePath")->setText(output.filePath(QString::fromUtf8("点云显示测试.xyz")));
+            closing.findChild<QPushButton*>("pointCloudLoadButton")->click();
+            require(closing.isLoading(),"dialog destruction can overlap background file load");
+        }
+        QCoreApplication::processEvents();
         std::cout<<"VTK regression: "<<checks<<" checks passed\n"; return 0;
     } catch(const std::exception& error) { std::cerr<<"FAIL: "<<error.what()<<"\n"; return 1; }
 }
