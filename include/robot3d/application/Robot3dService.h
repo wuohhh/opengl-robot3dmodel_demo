@@ -1,5 +1,6 @@
 #pragma once
 #include "robot3d/ports/IRobotConfigRepository.h"
+#include "robot3d/domain/TrajectorySampler.h"
 namespace robot3d { namespace application {
 class Robot3dService {
 public:

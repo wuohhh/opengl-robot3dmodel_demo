@@ -8,7 +8,7 @@ namespace robot3d { namespace domain {
 namespace {
 
 /** 位姿 -> 齐次矩阵（行主序 R[9] + T[3]）
- *  旋转顺序与 robot3dglwidget::Euler2RotateMatrix 保持一致：R = Rz * Ry * Rx
+ *  领域位姿采用 ZYX 欧拉角旋转顺序：R = Rz * Ry * Rx
  */
 void PoseToMatrix(const EulerPoseDeg &p, double R[9], double T[3])
 {

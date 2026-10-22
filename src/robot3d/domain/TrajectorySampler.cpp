@@ -1,4 +1,4 @@
-#include "robot3d/domain/RobotTypes.h"
+#include "robot3d/domain/TrajectorySampler.h"
 #include <cmath>
 namespace robot3d { namespace domain {
 bool TrajectorySampler::append(const EulerPoseDeg& p, std::vector<EulerPoseDeg>& points) const {

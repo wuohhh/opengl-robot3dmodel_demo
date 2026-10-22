@@ -54,6 +54,7 @@ function(robot3d_configure_target name)
 endfunction()
 add_library(robot3d_core STATIC
     src/robot3d/domain/Kinematics.cpp src/robot3d/domain/TrajectorySampler.cpp
+    include/robot3d/domain/TrajectorySampler.h
     src/robot3d/application/Robot3dService.cpp src/robot3d/application/SimulationService.cpp)
 target_include_directories(robot3d_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set_target_properties(robot3d_core PROPERTIES AUTOMOC OFF)
@@ -67,40 +68,94 @@ add_library(robot3d_pointcloud STATIC src/robot3d/infrastructure/PointCloudFileL
 target_include_directories(robot3d_pointcloud PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(robot3d_pointcloud PUBLIC Qt5::Core)
 robot3d_configure_target(robot3d_pointcloud)
-add_library(robot3d_presentation STATIC src/robot3d/presentation/Robot3dPresenter.cpp include/robot3d/presentation/Robot3dPresenter.h)
+add_library(robot3d_presentation STATIC
+    src/robot3d/presentation/Robot3dPresenter.cpp
+    include/robot3d/presentation/Robot3dPresenter.h
+    include/robot3d/presentation/Robot3dDisplayModel.h)
 target_link_libraries(robot3d_presentation PUBLIC robot3d_core robot3d_scene Qt5::Core)
 robot3d_configure_target(robot3d_presentation)
+# Shared CPU mesh parsing has no window or GPU context dependency.
 add_library(robot3d_rendering STATIC
-    src/robot3d/rendering/RobotMeshLoader.cpp src/robot3d/rendering/RobotSceneRenderer.cpp
-    3dmodel/basegeometry.cpp 3dmodel/linegeometry.cpp 3dmodel/planegeometry.cpp
-    3dmodel/robotgeometry.cpp 3dmodel/spheregeometry.cpp 3dmodel/substancegeometry.cpp)
-target_include_directories(robot3d_rendering PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(robot3d_rendering PUBLIC robot3d_scene Qt5::Gui Qt5::OpenGL PRIVATE robot3d_assimp opengl32)
+    src/robot3d/rendering/RobotMeshLoader.cpp
+    include/robot3d/rendering/RobotMeshLoader.h)
+target_include_directories(robot3d_rendering PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(robot3d_rendering PUBLIC Qt5::Gui PRIVATE robot3d_assimp)
 robot3d_configure_target(robot3d_rendering)
+
+add_library(robot3d_rendering_opengl STATIC
+    src/robot3d/rendering/opengl/OpenGlRobotSceneRenderer.cpp
+    include/robot3d/rendering/opengl/OpenGlRobotSceneRenderer.h
+    src/robot3d/rendering/opengl/geometry/OpenGlGeometryBase.cpp
+    include/robot3d/rendering/opengl/geometry/OpenGlGeometryBase.h
+    src/robot3d/rendering/opengl/geometry/OpenGlLineGeometry.cpp
+    include/robot3d/rendering/opengl/geometry/OpenGlLineGeometry.h
+    src/robot3d/rendering/opengl/geometry/OpenGlPlaneGeometry.cpp
+    include/robot3d/rendering/opengl/geometry/OpenGlPlaneGeometry.h
+    src/robot3d/rendering/opengl/geometry/OpenGlRobotGeometry.cpp
+    include/robot3d/rendering/opengl/geometry/OpenGlRobotGeometry.h
+    src/robot3d/rendering/opengl/geometry/OpenGlSphereGeometry.cpp
+    include/robot3d/rendering/opengl/geometry/OpenGlSphereGeometry.h
+    src/robot3d/rendering/opengl/geometry/OpenGlSolidGeometry.cpp
+    include/robot3d/rendering/opengl/geometry/OpenGlSolidGeometry.h
+    include/robot3d/rendering/opengl/geometry/OpenGlGeometryData.h)
+target_link_libraries(robot3d_rendering_opengl
+    PUBLIC robot3d_scene robot3d_rendering Qt5::Gui Qt5::OpenGL
+    PRIVATE opengl32)
+robot3d_configure_target(robot3d_rendering_opengl)
+
 if(ROBOT3D_WITH_VTK)
+    set(ROBOT3D_VTK_RENDERING_MODULES
+        VTK::FiltersSources VTK::RenderingCore VTK::RenderingOpenGL2)
+    set(ROBOT3D_VTK_VIEW_MODULES VTK::GUISupportQt VTK::InteractionStyle)
     add_library(robot3d_rendering_vtk STATIC
         src/robot3d/rendering/vtk/VtkRobotSceneRenderer.cpp
-        src/robot3d/rendering/vtk/VtkRobotViewport.cpp
-        include/robot3d/rendering/vtk/VtkRobotViewport.h
-        src/robot3d/rendering/vtk/VtkPointCloudViewport.cpp
-        include/robot3d/rendering/vtk/VtkPointCloudViewport.h)
-    target_include_directories(robot3d_rendering_vtk PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-    target_link_libraries(robot3d_rendering_vtk PUBLIC robot3d_scene Qt5::Widgets Qt5::OpenGL PRIVATE robot3d_assimp ${VTK_LIBRARIES})
+        include/robot3d/rendering/vtk/VtkRobotSceneRenderer.h
+        include/robot3d/rendering/vtk/VtkSceneMath.h)
+    target_link_libraries(robot3d_rendering_vtk
+        PUBLIC robot3d_scene Qt5::Gui
+        PRIVATE robot3d_assimp ${ROBOT3D_VTK_RENDERING_MODULES})
     robot3d_configure_target(robot3d_rendering_vtk)
-    vtk_module_autoinit(TARGETS robot3d_rendering_vtk MODULES ${VTK_LIBRARIES})
+    vtk_module_autoinit(TARGETS robot3d_rendering_vtk MODULES ${ROBOT3D_VTK_RENDERING_MODULES})
 endif()
+
 add_library(robot3d_shell STATIC
-    demoui.cpp demoui.h 3dmodel/robot3dglwidget.cpp 3dmodel/robot3dglwidget.h
-    3dmodel/robot3dcontrolwidget.cpp 3dmodel/robot3dcontrolwidget.h
+    src/robot3d/shell/Robot3dDemoView.cpp
+    include/robot3d/shell/Robot3dDemoView.h
+    src/robot3d/shell/RobotViewport.cpp
+    include/robot3d/shell/RobotViewport.h
+    src/robot3d/shell/opengl/OpenGlRobotViewport.cpp
+    include/robot3d/shell/opengl/OpenGlRobotViewport.h
+    src/robot3d/shell/input/LongPressRepeatFilter.cpp
+    include/robot3d/shell/input/LongPressRepeatFilter.h
     src/robot3d/composition/Robot3dComposition.cpp
-    src/robot3d/rendering/RobotViewport.cpp include/robot3d/rendering/RobotViewport.h)
-target_link_libraries(robot3d_shell PUBLIC robot3d_presentation robot3d_rendering Qt5::Widgets PRIVATE robot3d_infrastructure)
+    include/robot3d/composition/Robot3dComposition.h)
+target_link_libraries(robot3d_shell
+    PUBLIC robot3d_presentation robot3d_rendering_opengl Qt5::Widgets
+    PRIVATE robot3d_infrastructure)
 robot3d_configure_target(robot3d_shell)
 if(ROBOT3D_WITH_VTK)
     target_compile_definitions(robot3d_shell PUBLIC ROBOT3D_WITH_VTK)
-    target_sources(robot3d_shell PRIVATE src/robot3d/presentation/PointCloudDialog.cpp include/robot3d/presentation/PointCloudDialog.h)
-    target_link_libraries(robot3d_shell PUBLIC robot3d_rendering_vtk PRIVATE robot3d_pointcloud Qt5::Concurrent)
+    target_sources(robot3d_shell PRIVATE
+        src/robot3d/shell/vtk/VtkRobotViewport.cpp
+        include/robot3d/shell/vtk/VtkRobotViewport.h
+        src/robot3d/shell/vtk/VtkPointCloudViewport.cpp
+        include/robot3d/shell/vtk/VtkPointCloudViewport.h
+        src/robot3d/shell/PointCloudViewerDialog.cpp
+        include/robot3d/shell/PointCloudViewerDialog.h)
+    target_link_libraries(robot3d_shell
+        PUBLIC robot3d_rendering_vtk
+        PRIVATE robot3d_pointcloud Qt5::Concurrent ${ROBOT3D_VTK_VIEW_MODULES})
+    vtk_module_autoinit(TARGETS robot3d_shell
+        MODULES ${ROBOT3D_VTK_RENDERING_MODULES} ${ROBOT3D_VTK_VIEW_MODULES})
 endif()
+
+# Legacy host adaptation depends on the concrete View layer, never the reverse.
+add_library(robot3d_compatibility STATIC
+    src/robot3d/compatibility/LegacyRobot3dViewAdapter.cpp
+    include/robot3d/compatibility/LegacyRobot3dViewAdapter.h)
+target_link_libraries(robot3d_compatibility PUBLIC robot3d_shell)
+robot3d_configure_target(robot3d_compatibility)
+
 add_executable(robot3ddemo main.cpp demo.qrc)
 target_link_libraries(robot3ddemo PRIVATE robot3d_shell)
 robot3d_configure_target(robot3ddemo)
@@ -110,17 +165,17 @@ set_target_properties(robot3ddemo PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_B
 option(ROBOT3D_BUILD_TESTS "Build MVP boundary regression tests" ON)
 if(ROBOT3D_BUILD_TESTS)
     enable_testing()
-    add_executable(robot3d_pointcloud_tests tests/pointcloud_tests.cpp)
+    add_executable(robot3d_pointcloud_tests tests/PointCloudFileLoaderTests.cpp)
     target_link_libraries(robot3d_pointcloud_tests PRIVATE robot3d_pointcloud)
     robot3d_configure_target(robot3d_pointcloud_tests)
     add_test(NAME robot3d_pointcloud COMMAND robot3d_pointcloud_tests)
     set_tests_properties(robot3d_pointcloud PROPERTIES ENVIRONMENT "PATH=${ROBOT3D_QT_ROOT}/bin\;$ENV{PATH}")
-    add_executable(robot3d_mvp_tests tests/mvp_tests.cpp)
+    add_executable(robot3d_mvp_tests tests/Robot3dMvpTests.cpp)
     target_link_libraries(robot3d_mvp_tests PRIVATE robot3d_presentation robot3d_infrastructure)
     robot3d_configure_target(robot3d_mvp_tests)
     add_test(NAME robot3d_mvp COMMAND robot3d_mvp_tests "${CMAKE_CURRENT_SOURCE_DIR}/robotType")
-    add_executable(robot3d_gui_tests tests/gui_tests.cpp demo.qrc)
-    target_link_libraries(robot3d_gui_tests PRIVATE robot3d_shell)
+    add_executable(robot3d_gui_tests tests/Robot3dGuiTests.cpp demo.qrc)
+    target_link_libraries(robot3d_gui_tests PRIVATE robot3d_compatibility)
     robot3d_configure_target(robot3d_gui_tests)
     set_target_properties(robot3d_gui_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
     add_test(NAME robot3d_gui COMMAND robot3d_gui_tests "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/mvp-gui-validation")
@@ -128,7 +183,7 @@ if(ROBOT3D_BUILD_TESTS)
 
     set_tests_properties(robot3d_mvp PROPERTIES ENVIRONMENT "PATH=${ROBOT3D_QT_ROOT}/bin\;$ENV{PATH}")
     if(ROBOT3D_WITH_VTK)
-        add_executable(robot3d_vtk_tests tests/vtk_tests.cpp demo.qrc)
+        add_executable(robot3d_vtk_tests tests/VtkRobotViewportTests.cpp demo.qrc)
         target_link_libraries(robot3d_vtk_tests PRIVATE robot3d_shell)
         robot3d_configure_target(robot3d_vtk_tests)
         set_target_properties(robot3d_vtk_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")

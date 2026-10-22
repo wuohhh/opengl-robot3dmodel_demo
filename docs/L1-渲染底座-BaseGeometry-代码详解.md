@@ -1,3 +1,5 @@
+> 历史材料：本文保留重构前的类名、文件名、代码片段和当时行号。2026-10-22 已按 MVP 职责统一命名与目录，当前对应位置见 [MVP 命名与目录约定](MVP命名与目录约定.md)，当前架构以 [项目 README](../README.md) 为准。
+
 # L1 渲染底座：`BaseGeometry` 代码级实现详解
 
 > 对象：`3dmodel/basegeometry.h`（108 行）+ `3dmodel/basegeometry.cpp`（25 行）+ `shaders/`（8 个 GLSL）

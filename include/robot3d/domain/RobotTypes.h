@@ -30,10 +30,4 @@ struct RobotStateSnapshot {
 };
 // The original UI uses demonstration limits. These are not hardware configuration.
 inline double demoJointLimit(int axis) { return axis==2 ? 165.0 : 360.0; }
-class TrajectorySampler {
-public:
-    explicit TrajectorySampler(std::size_t capacity=1000) : capacity_(capacity) {}
-    bool append(const EulerPoseDeg& pose, std::vector<EulerPoseDeg>& points) const;
-private: std::size_t capacity_;
-};
 }}

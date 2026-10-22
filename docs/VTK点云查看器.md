@@ -47,11 +47,13 @@ SDK 首次准备方式见 [VTK 双渲染后端使用说明](VTK双渲染后端�
 
 ## 实现与验证
 
+类名与目录按 [MVP 命名与目录约定](MVP命名与目录约定.md) 统一；点云弹窗与视口属于具体 View，文件解析留在 infrastructure。
+
 - `domain/PointCloud.h`：与 Qt / VTK 无关的点云数据。
 - `infrastructure/PointCloudFileLoader`：格式解析、颜色读取和输入校验，不依赖 VTK。
-- `rendering/vtk/VtkPointCloudViewport`：VTK PolyData、顶点、RGB、相机及渲染交互。
-- `presentation/PointCloudDialog`：文件选择、后台加载、显示控制和状态反馈。
-- `demoui.cpp`：右侧按钮与弹窗复用。
+- `shell/vtk/VtkPointCloudViewport`：VTK PolyData、顶点、RGB、相机及渲染交互。
+- `shell/PointCloudViewerDialog`：文件选择、后台加载、显示控制和状态反馈。
+- `shell/Robot3dDemoView`：右侧按钮与弹窗复用。
 
 `robot3d_pointcloud` 测试覆盖中文路径、BOM、各格式与编码、字段顺序、RGB、LZF、无效坐标、损坏和截断文件及点数限制；`robot3d_vtk` 在实际 OpenGL 上下文中验证弹窗、后台加载、点云图像、显示控制、失败保留场景、关闭重开及清空。原有机器人回归保留。
 

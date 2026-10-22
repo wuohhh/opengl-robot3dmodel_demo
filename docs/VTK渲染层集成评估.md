@@ -2,6 +2,8 @@
 
 后续实施状态：已按保留原工具链的路线新增独立 VTK 后端和运行时切换入口，Release 构建与运行回归均已通过。VTK 9.3.1 在本机 v140 的 vtkImplicitArray 模板实例化处失败，因此改用 9.2.6。构建及切换方法见 [VTK双渲染后端使用说明](VTK双渲染后端使用说明.md)。下文第 1～7 节保留方案评估，其中原架构及工作量描述对应改造前状态；第 8 节记录后续实施与本机实测。
 
+命名说明：2026-10-22 已按 MVP 职责统一类名与目录，见 [MVP 命名与目录约定](MVP命名与目录约定.md)。下文保留评估时的旧类名及行号；本地源码链接指向当前对应实现。
+
 评估日期：2026-10-15。范围：当前 robot3d_demo 源码、构建配置、模型资源与已有测试记录，以及 VTK / Qt 官方版本源码和文档。本文分别评估保留现有工具链与升级工具链两条路线。
 
 **结论：可以集成，架构适配度较高，改造规模中等。建议将 VTK 作为独立渲染后端接入现有场景快照边界，并先完成小范围原型验证。后续已完成保留原工具链路线的接入和 Release 验证，详见第 8 节。**
@@ -15,8 +17,8 @@
 | [CMakeLists.txt](../CMakeLists.txt)，第 48～73 行 | core、infrastructure、presentation、rendering、shell 分目标构建 | 可以增加 VTK 目标而不改运动学和应用服务 |
 | [RobotSceneSnapshot.h](../include/robot3d/scene/RobotSceneSnapshot.h)，第 14 行 | 快照包含关节、TCP、显示选项、工具、安全面和目标关节 | 可继续作为两个后端共享的场景输入 |
 | [IRobot3dView.h](../include/robot3d/presentation/IRobot3dView.h)，第 13～15 行 | prepareModel / showState / submitScene 已形成接口 | Presenter 无需依赖 vtkActor 或 vtkRenderer |
-| [RobotSceneRenderer.cpp](../src/robot3d/rendering/RobotSceneRenderer.cpp)，第 37、48、79 行 | 模型准备、快照应用、实际绘制集中 | 是建立后端适配的主要切入点 |
-| [robot3dglwidget.cpp](../3dmodel/robot3dglwidget.cpp)，第 13～68 行 | Qt 上下文、输入、相机和帧通知仍与具体 GL 视口绑定 | 需要改造视口，不能只替换 Geometry 内部调用 |
+| [RobotSceneRenderer.cpp](../src/robot3d/rendering/opengl/OpenGlRobotSceneRenderer.cpp)，第 37、48、79 行 | 模型准备、快照应用、实际绘制集中 | 是建立后端适配的主要切入点 |
+| [robot3dglwidget.cpp](../src/robot3d/shell/opengl/OpenGlRobotViewport.cpp)，第 13～68 行 | Qt 上下文、输入、相机和帧通知仍与具体 GL 视口绑定 | 需要改造视口，不能只替换 Geometry 内部调用 |
 
 当前并不存在可直接替换的渲染接口：RobotSceneRenderer 继承 QOpenGLFunctions，draw() 接收 QMatrix4x4；DemoUi 与兼容门面直接持有 Robot3dGLWidget。已有分层减少了改造范围，但没有消除视口耦合。
 
@@ -104,7 +106,7 @@ Actor 可通过用户变换矩阵定位，见 [vtkProp3D](https://github.com/Kit
 
 ### 5.1 关节变换不能直接套普通 DH Actor 层级
 
-[robotgeometry.cpp](../3dmodel/robotgeometry.cpp) 第 173～221 行目前每次恢复原始顶点，累乘绕指定轴心的旋转矩阵，再逐顶点修改并上传 VBO；第 390～406 行按 DH 长度构造轴心与方向。原始网格与这些轴心属于当前零位几何约定，不能假定每个 OBJ 都已经处于标准 DH 的局部坐标系。
+[robotgeometry.cpp](../src/robot3d/rendering/opengl/geometry/OpenGlRobotGeometry.cpp) 第 173～221 行目前每次恢复原始顶点，累乘绕指定轴心的旋转矩阵，再逐顶点修改并上传 VBO；第 390～406 行按 DH 长度构造轴心与方向。原始网格与这些轴心属于当前零位几何约定，不能假定每个 OBJ 都已经处于标准 DH 的局部坐标系。
 
 建议首先提取当前显示用连杆变换计算，保留矩阵乘法顺序，再对 Actor 设置矩阵。不要同时使用已累乘的世界矩阵与父子 Assembly 变换，否则可能重复施加祖先变换。模型关节链与 TCP 正解的一致性，应由数值样本独立核对。
 
@@ -128,7 +130,7 @@ Actor 可通过用户变换矩阵定位，见 [vtkProp3D](https://github.com/Kit
 
 ### 5.3 单位和旋转语义已有历史兼容约定
 
-领域坐标为 mm、TCP 为 ZYX 欧拉角度数；Scene 中仍有明确命名的 LegacyAxisAngleDeg 适配。[RobotSceneRenderer.cpp](../src/robot3d/rendering/RobotSceneRenderer.cpp) 第 19～25 行按三个旋转分量组成的向量解释轴角，不能直接换成 VTK 的三个欧拉旋转调用。
+领域坐标为 mm、TCP 为 ZYX 欧拉角度数；Scene 中仍有明确命名的 LegacyAxisAngleDeg 适配。[RobotSceneRenderer.cpp](../src/robot3d/rendering/opengl/OpenGlRobotSceneRenderer.cpp) 第 19～25 行按三个旋转分量组成的向量解释轴角，不能直接换成 VTK 的三个欧拉旋转调用。
 
 G_SCALE=0.04 分散在网格、球、线、面和位移矩阵入口。迁移初期需逐入口记录实际单位，保证每条链只缩放一次；不要在未核对前把所有标量统一乘 0.04。先对齐已有显示，再单独处理历史数学语义修正。
 

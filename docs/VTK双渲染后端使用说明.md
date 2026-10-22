@@ -1,6 +1,6 @@
 # OpenGL / VTK 双渲染后端
 
-本工程保留原有 OpenGL Geometry、Shader 和 RobotSceneRenderer，新增 VTK 9.2.6 后端。两者通过 RobotViewport 门面接收同一份 RobotSceneSnapshot；运动学、应用服务和 Presenter 不依赖 VTK。
+本工程提供 OpenGlRobotSceneRenderer 与 VtkRobotSceneRenderer 两个场景渲染后端，使用原有着色器和 VTK 9.2.6。两者通过 RobotViewport 门面接收同一份 RobotSceneSnapshot；运动学、应用服务和 Presenter 不依赖 VTK。
 
 默认仍使用 OpenGL。启用 VTK 的构建中，右侧“渲染后端 / 效果对比”下拉框可以直接切换 OpenGL / VTK。切换保留机型、关节、显示选项、旋转、平移、缩放和安装视角备份，不会为了切换重新提交业务状态。模型准备失败时恢复原后端并显示错误。
 
@@ -12,30 +12,23 @@
 
 VTK 9.3.1 虽然声明允许 v140，但本机实际编译在 vtkImplicitArray 的模板实例化处失败。本实现选择 9.2.6，避免修改 9.3.1 的隐式数组模板实现。9.2.6 的 Qt 依赖闭包还需要两处 v140 成员模板解析兼容修补：vtkDIYGhostUtilities.cxx 移除非依赖对象 QueryPointWorker 调用前多余的 template；同名 .txx 对 Impl 的调用仅在 _MSC_VER == 1900 时采用旧解析器写法，其他编译器保留标准语法。tools/patch-vtk-v140.py 会检查精确匹配、保留 BOM/换行并读回验证，构建脚本自动执行；不修改算法。依赖构建同时关闭 VTK_ENABLE_WRAPPING，避免新生成的头文件扫描工具读取透明加密文件；C++ 渲染功能不依赖该扫描。
 
-继续使用 Qt 5.9.9 / MSVC2015 v140 x64 / C++11。原构建目录不变；VTK 对比版本使用另一个目录，避免污染原有配置。
+继续使用 Qt 5.9.9 / MSVC2015 v140 x64 / C++11。当前 VS Code 脚本统一启用 VTK；原 OpenGL 构建目录可作为已有的独立配置继续验证。
 
-原 OpenGL 版本：
-
-~~~powershell
-.\.vscode\qt-msvc.ps1 -Configuration Release -Action Build
-.\.vscode\qt-msvc.ps1 -Configuration Release -Action Run
-~~~
-
-首次准备 VTK 依赖，然后构建对比版本：
+首次准备 VTK 依赖，随后构建或运行双后端版本：
 
 ~~~powershell
 .\tools\build-vtk.ps1 -Configuration Release -Jobs 3
-.\.vscode\qt-msvc.ps1 -Configuration Release -Action Build -WithVTK
-.\.vscode\qt-msvc.ps1 -Configuration Release -Action Run -WithVTK
+.\.vscode\qt-msvc.ps1 -Configuration Release -Action Build
+.\.vscode\qt-msvc.ps1 -Configuration Release -Action Run
 ~~~
 
 源码默认放在项目 build/deps 下。依赖构建和临时编译目录可用 -BuildRoot 指定，例如 -BuildRoot 'X:\robot3d-vtk-deps'；Debug / Release 分别记录到 build/deps/vtk-build-root-配置.json，编译中断后可从原目录继续；成功后还会记录 SDK 路径，应用构建可自动找到。首次编译需要预留数 GB 空间，建议本机使用 -Jobs 3。
 
 Debug 使用相同命令，将 Release 换为 Debug；VTK Debug / Release SDK 分开构建，匹配 /MDd 与 /MD。已有自建 SDK 时，可增加 -VtkDir 参数指向 vtk-config.cmake 所在目录。
 
-在 VS Code 中直接执行“VTK comparison: Build Debug”即可构建 VTK Debug 应用；任务会先执行“VTK dependency: Build Debug”准备缺失的 SDK。依赖任务使用 -IfMissing，SDK 已安装且配置、头文件及关键 DLL / 导入库存在时直接复用。Release 任务采用相同的依赖关系。
+在 VS Code 中直接执行“VTK: Build Debug”即可构建 VTK Debug 应用；任务会先执行“VTK dependency: Build Debug”准备缺失的 SDK。依赖任务使用 -IfMissing，SDK 已安装且配置、头文件及关键 DLL / 导入库存在时直接复用。Release 任务采用相同的依赖关系。
 
-按 F5 时选择“VTK comparison - Debug”，会先完成上述构建链再从 VTK 后端启动。原 OpenGL 默认构建任务保留。
+按 F5 时选择“VTK Debug”，会先完成上述构建链再从 VTK 后端启动。未设置 DEMO_RENDERER 时，程序默认使用 OpenGL 视口。
 
 若要重新编译 VTK SDK，直接运行 tools/build-vtk.ps1 -Configuration Debug（不带 -IfMissing）。首次构建需要可写且空间充足的依赖目录；可用 -BuildRoot 指定，源码仍保留在项目 build/deps。
 
@@ -66,16 +59,19 @@ Debug 使用相同命令，将 Release 换为 Debug；VTK Debug / Release SDK �
 
 ## 实现位置
 
+2026-10-22 已统一类名和目录，迁移映射见 [MVP 命名与目录约定](MVP命名与目录约定.md)。`OpenGlRobotViewport` 与 `VtkRobotViewport` 都属于 shell 的具体 View；它们分别调用 rendering 中的场景渲染器。
+
 | 文件 | 职责 |
 | --- | --- |
-| include/robot3d/rendering/RobotViewport.h、src/robot3d/rendering/RobotViewport.cpp | 统一视口、后端切换、状态与视角转移、通知路由 |
-| include/robot3d/rendering/vtk、src/robot3d/rendering/vtk | VTK 场景、矩阵和 Qt 视口实现 |
-| tests/vtk_tests.cpp | 真实 OpenGL / VTK 切换与场景回归 |
+| include/src/robot3d/shell/RobotViewport.* | 统一视口、后端切换、状态与视角转移、通知路由 |
+| include/src/robot3d/shell/opengl、shell/vtk | 同层的 OpenGL / VTK Qt 视口与交互 |
+| include/src/robot3d/rendering/opengl、rendering/vtk | 两种后端的场景渲染、几何和矩阵实现 |
+| tests/VtkRobotViewportTests.cpp | 真实 OpenGL / VTK 切换与场景回归 |
 | tools/build-vtk.ps1、tools/fetch-vtk.py、tools/patch-vtk-v140.py | 可重复的依赖准备和构建入口 |
 
 VTK 连杆使用真实 aiFace 索引生成 PolyData，模型准备时构建静态几何，关节更新使用 Actor 的用户矩阵。目标机器人共享静态几何并使用另一套矩阵。路点使用 Glyph，轨迹使用 PolyLine；工具覆盖球、长方体、圆柱和圆锥。
 
-保留原显示链的轴心、矩阵乘法顺序、G_SCALE 与 LegacyAxisAngleDeg 语义，包括 TCP / 路点的历史位置缩放，方便对照原实现。运动学或单位语义修正应另行提交，不混入后端切换。
+保留原显示链的轴心、矩阵乘法顺序、SceneUnits.h 中 0.04 的场景比例与 LegacyAxisAngleDeg 语义，包括 TCP / 路点的历史位置缩放，方便对照原实现。运动学或单位语义修正应另行提交，不混入后端切换。
 
 两个后端在同一 Qt 顶层窗口内运行。VTK 视口采用 VTK 提供的缓冲格式，并请求桌面 OpenGL 3.2 CompatibilityProfile，以与旧 GLSL 共存；不全局修改旧 OpenGL 视口的格式。仍需兼容实际显卡驱动。
 
@@ -115,6 +111,6 @@ VTK 连杆使用真实 aiFace 索引生成 PolyData，模型准备时构建静�
 
 ## 文件存储
 
-项目 C++ 源码通过白名单 Python 3.7 读写，并保留原文件 BOM 与行尾。原 OpenGL 实现仅增加相机状态读写接口，Geometry 与 Shader 算法保持原样。旧 Robot3dControlWidget / GetRobot3dGLWidget 兼容入口继续使用 OpenGL；DemoUi 和需要双后端的宿主使用新的 RobotViewport 门面。
+项目 C++ 源码通过白名单 Python 3.7 读写，并保留原文件 BOM 与行尾。本轮统一了类名和目录，具体 View 归 shell、场景渲染归 rendering；几何与着色器行为继续沿用现有约定。LegacyRobot3dViewAdapter / openGlViewport 兼容入口继续使用 OpenGL；Robot3dDemoView 和需要双后端的宿主使用新的 RobotViewport 门面。
 
 Markdown、PowerShell 和 JSON 配置按本机加密策略为明文文件；没有通过解密副本覆盖原源码。构建依赖与产物位于被忽略的 build 目录。

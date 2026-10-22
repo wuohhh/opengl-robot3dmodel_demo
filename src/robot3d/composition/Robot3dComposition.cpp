@@ -1,8 +1,8 @@
 #include "robot3d/composition/Robot3dComposition.h"
 #include "robot3d/infrastructure/XmlRobotConfigRepository.h"
 #include "robot3d/presentation/Robot3dPresenter.h"
-#include "3dmodel/robot3dglwidget.h"
-#include "robot3d/rendering/RobotViewport.h"
+#include "robot3d/shell/opengl/OpenGlRobotViewport.h"
+#include "robot3d/shell/RobotViewport.h"
 namespace robot3d { namespace composition {
 struct Robot3dComposition::Implementation {
     // Reverse member destruction releases the Presenter/timer before its services.
@@ -21,7 +21,7 @@ struct Robot3dComposition::Implementation {
     QObject::connect(&viewport,&Viewport::displayOptionsRequested,p,&presentation::Robot3dPresenter::onDisplayOptionsRequested);
     }
 };
-Robot3dComposition::Robot3dComposition(presentation::IRobot3dView& v,QObject& life,Robot3dGLWidget& viewport,const std::string& root)
+Robot3dComposition::Robot3dComposition(presentation::IRobot3dView& v,QObject& life,OpenGlRobotViewport& viewport,const std::string& root)
     : implementation_(new Implementation(v,life,root)) { implementation_->bind(viewport); }
 Robot3dComposition::Robot3dComposition(presentation::IRobot3dView& v,QObject& life,RobotViewport& viewport,const std::string& root)
     : implementation_(new Implementation(v,life,root)) { implementation_->bind(viewport); }

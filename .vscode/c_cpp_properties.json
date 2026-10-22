@@ -9,7 +9,6 @@
             "compileCommands": "${workspaceFolder}/build/vscode-qt5.9.9-msvc2015_64-vtk/Debug/compile_commands.json",
             "includePath": [
                 "${workspaceFolder}",
-                "${workspaceFolder}/3dmodel",
                 "${workspaceFolder}/assimp/include",
                 "C:/Qt/Qt5.9.9/5.9.9/msvc2015_64/include",
                 "C:/Qt/Qt5.9.9/5.9.9/msvc2015_64/include/QtCore",
@@ -56,7 +55,6 @@
             "compileCommands": "${workspaceFolder}/build/vscode-qt5.9.9-msvc2015_64-vtk/Release/compile_commands.json",
             "includePath": [
                 "${workspaceFolder}",
-                "${workspaceFolder}/3dmodel",
                 "${workspaceFolder}/assimp/include",
                 "C:/Qt/Qt5.9.9/5.9.9/msvc2015_64/include",
                 "C:/Qt/Qt5.9.9/5.9.9/msvc2015_64/include/QtCore",

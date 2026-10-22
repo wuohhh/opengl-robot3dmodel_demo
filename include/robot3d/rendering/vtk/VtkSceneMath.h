@@ -2,8 +2,9 @@
 #include <QMatrix4x4>
 #include "robot3d/scene/RobotSceneSnapshot.h"
 #include "robot3d/rendering/CameraState.h"
+#include "robot3d/rendering/SceneUnits.h"
 namespace robot3d { namespace rendering { namespace vtkmath {
-const double scale = 0.04;
+const double scale = kMillimetersToModelUnits;
 inline QMatrix4x4 poseMatrix(const scene::LegacyAxisAngleDeg& p) {
     QMatrix4x4 m;
     const QVector3D v(p.Rx,p.Ry,p.Rz);

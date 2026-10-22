@@ -1,10 +1,7 @@
 #pragma once
 #include "robot3d/domain/RobotTypes.h"
+#include "robot3d/scene/RobotDisplayOptions.h"
 namespace robot3d { namespace scene {
-struct RobotDisplayOptions {
-    bool coordinatePanel=true, operatePanel=true, zoomPanel=true, posePanel=false, waypointPanel=true, speedPanel=true;
-    bool coordinateAxes=true, waypoints=false, trajectory=false, tool=false, endWorkpiece=false, targetRobot=false, safePlanes=false, install=false;
-};
 // The old viewport interprets the three rotation components as an axis-angle vector
 // in degrees. Keep that display convention explicit until a separately verified correction.
 struct LegacyAxisAngleDeg { double X,Y,Z,Rx,Ry,Rz; };

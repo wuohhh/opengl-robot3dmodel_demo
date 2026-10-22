@@ -6,14 +6,14 @@
 #include <QDateTime>
 #include <QDebug>
 
-#include "demoui.h"
+#include "robot3d/shell/Robot3dDemoView.h"
 
 /**
  * @brief 机械臂 3D 显示模块移植 Demo 入口
  *
  * 运行前请确保可执行文件所在目录存在：
  *   - robotType/   机型模型与 config.xml（按相对路径读取）
- *   - libassimp.dll / Qt5*.dll / MinGW 运行库
+ *   - assimp-vc130-mt.dll / Qt5*.dll / MSVC2015 运行库
  *
  * 启动后会在当前目录生成 demo_debug.log，记录模型加载与运行信息。
  */
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     qDebug() << "robotType 目录存在:" << QDir("robotType").exists();
     qDebug() << "libassimp.dll 存在:" << QFile::exists("libassimp.dll");
 
-    DemoUi w;
+    Robot3dDemoView w;
     w.resize(1280, 800);
     w.show();
 

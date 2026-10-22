@@ -83,7 +83,7 @@ CMake 使用自身的头文件依赖扫描，避免中文版 VS2015 的 `/showIn
 
 ## MVP 分层与回归
 
-当前构建将核心、基础设施、展示器、渲染和壳层编入独立库；原 Build/Run/F5 入口保持可用。默认同时生成 robot3d_mvp_tests 与 robot3d_gui_tests，可通过 CMake 的 ROBOT3D_BUILD_TESTS 选项关闭。
+当前构建将核心、基础设施、展示器、CPU 网格解析、OpenGL / VTK 渲染、具体 View 和兼容适配编入对应目标；Build/Run/F5 入口保持可用。默认启用 VTK，生成 MVP、OpenGL GUI、VTK 与点云文件四组测试，可通过 CMake 的 ROBOT3D_BUILD_TESTS 选项关闭。类名、文件名和目录归属见 [MVP 命名与目录约定](../docs/MVP命名与目录约定.md)。
 
 ```powershell
 & 'C:\CMake\bin\ctest.exe' --test-dir build/vscode-qt5.9.9-msvc2015_64-vtk/Debug --output-on-failure

@@ -1,6 +1,6 @@
 # robot3d_demo MVP 分层架构设计与重构指南
 
-> 文档状态：MVP 主干与独立渲染已落地；本文同时保留目标设计及迁移依据。当前实现、验证与兼容边界见第 17 节。
+> 文档状态：MVP 主干与双后端渲染已落地；2026-10-22 已统一类名与目录。本文同时保留重构前分析及迁移依据，当前实现见第 17 节，完整旧名映射见 [MVP 命名与目录约定](MVP命名与目录约定.md)。
 >
 > 编写日期：2026-10-15。当前项目 HEAD：`26e5fe9`；参考项目 HEAD：`5e00993`。分析对象为当时实际读取的工作区源码。
 >
@@ -36,14 +36,16 @@
 
 ### 2.1 重构前已核对的主要职责
 
+以下旧类名、旧文件名及行为用于说明重构动因；源码链接指向当前对应实现，不代表旧行为仍然存在。
+
 | 当前代码 | 实际承担的工作 | 需要调整的边界 |
 | --- | --- | --- |
-| [demoui.cpp](../demoui.cpp) | 构建面板、初始化配置、读取滑条、运行模拟、刷新标签、直接更新三维控件 | 将交互编排和状态修改移出界面 |
-| [robot3dglwidget.cpp](../3dmodel/robot3dglwidget.cpp) | OpenGL 生命周期、绘制、叠加面板、视角交互、坐标系选择、写入运动相关参数 | 分开界面、领域处理与渲染 |
-| [robot3dcontrolwidget.cpp](../3dmodel/robot3dcontrolwidget.cpp) | 单例入口、更新转发、轨迹采样、长按事件及停止参数写入 | 将兼容入口、轨迹规则和输入事件拆开 |
-| [demo_support.h](../3dmodel/demo_support.h) / [demo_support.cpp](../3dmodel/demo_support.cpp) | 基础类型、运动学、配置、全局数据、UI 桩和旧接口宏映射 | 按职责拆分，减少对整个适配头的依赖 |
-| [robotgeometry.cpp](../3dmodel/robotgeometry.cpp) | 构造时读取全局配置、Assimp 解析、关节顶点变换、VBO 更新和绘制 | 显式传入配置，分开 CPU 数据与 GPU 资源 |
-| [basegeometry.h](../3dmodel/basegeometry.h) 及其他 Geometry | 图元描述、顶点和缓冲、shader、绘制 | 归入渲染侧，避免进入业务 Model |
+| [demoui.cpp](../src/robot3d/shell/Robot3dDemoView.cpp) | 构建面板、初始化配置、读取滑条、运行模拟、刷新标签、直接更新三维控件 | 将交互编排和状态修改移出界面 |
+| [robot3dglwidget.cpp](../src/robot3d/shell/opengl/OpenGlRobotViewport.cpp) | OpenGL 生命周期、绘制、叠加面板、视角交互、坐标系选择、写入运动相关参数 | 分开界面、领域处理与渲染 |
+| [robot3dcontrolwidget.cpp](../src/robot3d/compatibility/LegacyRobot3dViewAdapter.cpp) | 单例入口、更新转发、轨迹采样、长按事件及停止参数写入 | 将兼容入口、轨迹规则和输入事件拆开 |
+| [demo_support.h](../include/robot3d/compatibility/LegacyRobotTypes.h) / [demo_support.cpp](../include/robot3d/compatibility/LegacyRobotTypes.h) | 基础类型、运动学、配置、全局数据、UI 桩和旧接口宏映射 | 按职责拆分，减少对整个适配头的依赖 |
+| [robotgeometry.cpp](../src/robot3d/rendering/opengl/geometry/OpenGlRobotGeometry.cpp) | 构造时读取全局配置、Assimp 解析、关节顶点变换、VBO 更新和绘制 | 显式传入配置，分开 CPU 数据与 GPU 资源 |
+| [basegeometry.h](../include/robot3d/rendering/opengl/geometry/OpenGlGeometryBase.h) 及其他 Geometry | 图元描述、顶点和缓冲、shader、绘制 | 归入渲染侧，避免进入业务 Model |
 
 ### 2.2 需要消除的具体耦合
 
@@ -95,13 +97,13 @@ C:\Users\yuguilin\Desktop\gitlab\CGXi_MasterWeld_new\CGXi_MasterWeld_new
 ```mermaid
 flowchart TB
     U[用户或宿主]
-    V["shell / View<br/>DemoUi + Robot3dGLWidget"]
+    V["shell / View<br/>Robot3dDemoView + RobotViewport<br/>OpenGlRobotViewport / VtkRobotViewport"]
     P["presentation<br/>Robot3dPresenter"]
     A["application<br/>Robot3dService / SimulationService"]
     D["domain<br/>状态、DH、运动学、坐标系、轨迹规则"]
     I["ports<br/>配置仓储 / 状态数据源接口"]
     F["infrastructure<br/>XML 配置 / 数据源适配"]
-    R["rendering<br/>RobotSceneRenderer + Geometry"]
+    R["rendering<br/>OpenGlRobotSceneRenderer / VtkRobotSceneRenderer"]
 
     U --> V
     V -->|用户意图| P
@@ -132,13 +134,13 @@ flowchart TB
 | `shell` | presentation、scene、rendering、Qt Widgets | 具体配置仓储、设备 SDK、直接修改领域状态 |
 | `composition` / `app` | 装配所需的各模块 | 不承接领域规则和每帧绘制 |
 
-底层模块不反向包含 `DemoUi`、Presenter 或 `Robot3dGLWidget`。具体基础设施通过实现 `ports` 接口接入，由装配层选择并传入应用服务。
+底层模块不反向包含 `Robot3dDemoView`、Presenter 或 `OpenGlRobotViewport`。具体基础设施通过实现 `ports` 接口接入，由装配层选择并传入应用服务。
 
 ### 4.3 MVP 中的 Model 边界
 
 Model 主要由 `domain + application` 构成；它通过 `ports` 使用外部能力。Model 可以保存机器人状态、执行运动学、解析坐标系语义并处理轨迹采样规则。
 
-`RobotGeometry`、`BaseGeometry`、VBO、shader、相机和 GPU 网格属于显示实现。不能因为类名包含 Geometry 或“模型”，就把它们归到 MVP 的 Model。
+`OpenGlRobotGeometry`、`OpenGlGeometryBase`、VBO、shader、相机和 GPU 网格属于显示实现。不能因为类名包含 Geometry 或“模型”，就把它们归到 MVP 的 Model。
 
 ## 5. 各层职责与状态所有权
 
@@ -182,7 +184,7 @@ Model 主要由 `domain + application` 构成；它通过 `ports` 使用外部�
 
 ### 5.4 shell：具体 View 与用户输入
 
-`DemoUi` 组织窗口和控制面板，`Robot3dGLWidget` 承载三维视口。组合 View 对外实现 `IRobot3dView`，内部将场景提交给视口。
+`Robot3dDemoView` 组织窗口和控制面板并实现 `IRobot3dView`，通过 `RobotViewport` 提交场景。`OpenGlRobotViewport` 与 `VtkRobotViewport` 是同层的后端视口，负责相机、输入、叠加面板和渲染调度；点云窗口 `PointCloudViewerDialog` 与 `VtkPointCloudViewport` 也归 shell。
 
 View 可以：
 
@@ -193,9 +195,9 @@ View 可以：
 
 View 不直接调用 `LoadRobotType()`、正解函数、配置仓储或机器人 SDK，不通过内部 `objectName` 跨组件访问业务状态。
 
-### 5.5 rendering：场景与 OpenGL
+### 5.5 rendering：场景与后端绘制
 
-`RobotSceneRenderer` 接收场景快照，管理机器人、TCP、坐标轴、路点、安全平面及工具的绘制。现有 Geometry 可逐步迁入此模块。
+`OpenGlRobotSceneRenderer` 与 `VtkRobotSceneRenderer` 接收同一场景快照，管理机器人、TCP、坐标轴、路点、安全平面及工具的绘制。OpenGL 图元统一为 `OpenGl*Geometry`，归 `rendering/opengl/geometry`；显示比例由 `SceneUnits.h` 共享。
 
 `RobotMeshLoader` 初期放在渲染模块，负责 CPU 网格解析；GPU 上传由 Renderer 单独完成。如果后续确实需要共享或替换加载器，再抽取专用接口。
 
@@ -216,30 +218,34 @@ Renderer 不读取 `DemoDataHub`、`RobotConfig` 或 `SoftwareUI_Controller`，�
 
 相机属于表现状态。机器人坐标系定义属于领域状态；将该坐标系应用到观察矩阵属于渲染适配，两者需要分开。
 
-## 6. 建议目录与接口形态
+## 6. 目录与接口形态
 
-### 6.1 目录规划
+### 6.1 当前目录
 
-以下表示目标归属。按迁移批次创建实际需要的文件，无须提前创建全部空模块。
+以下表示当前自有代码的模块归属；按职责新增文件，避免把具体 View 放入 presentation 或 rendering。
 
 ```text
 robot3d_demo/
-├── app/
-│   └── main.cpp
+├── main.cpp
 ├── include/robot3d/
-│   ├── core/                 Result 等公共类型
-│   ├── domain/               RobotState / RobotConfiguration / Kinematics
-│   ├── ports/                IRobotConfigRepository / IRobotStateSource
+│   ├── core/                 Result
+│   ├── domain/               RobotTypes / Kinematics / TrajectorySampler / PointCloud
+│   ├── ports/                IRobotConfigRepository
 │   ├── application/          Robot3dService / SimulationService
-│   ├── scene/                RobotSceneSnapshot / RobotModelDescriptor
-│   ├── presentation/         IRobot3dView / Robot3dPresenter / DisplayModel
-│   ├── infrastructure/       XmlRobotConfigRepository / 数据源适配
-│   ├── rendering/            RobotSceneRenderer / Geometry / CameraState
-│   ├── shell/                DemoUi / Robot3dGLWidget / 面板
+│   ├── scene/                RobotSceneSnapshot / RobotDisplayOptions
+│   ├── presentation/         IRobot3dView / Robot3dPresenter / Robot3dDisplayModel
+│   ├── infrastructure/       XmlRobotConfigRepository / PointCloudFileLoader
+│   ├── rendering/            RobotMeshLoader / CameraState / SceneUnits
+│   │   ├── opengl/           OpenGlRobotSceneRenderer / geometry/OpenGl*Geometry
+│   │   └── vtk/              VtkRobotSceneRenderer / VtkSceneMath
+│   ├── shell/                Robot3dDemoView / RobotViewport / PointCloudViewerDialog
+│   │   ├── opengl/           OpenGlRobotViewport
+│   │   ├── vtk/              VtkRobotViewport / VtkPointCloudViewport
+│   │   └── input/            LongPressRepeatFilter
+│   ├── compatibility/        LegacyRobot3dViewAdapter / LegacyRobotTypes
 │   └── composition/          Robot3dComposition
-├── src/robot3d/               与上述公共头文件按模块对应的实现
-├── tests/                    后续按边界新增有实际价值的验证
-├── 3dmodel/                  迁移期间保留的原实现与兼容入口
+├── src/robot3d/               与公共头文件按模块对应的实现
+├── tests/                    按被验证的组件命名
 ├── shaders/
 ├── resource/
 ├── robotType/
@@ -529,18 +535,22 @@ Qt 排队信号使用自定义值类型时，在建立跨线程连接前完成�
 
 ### 12.1 构建边界
 
-当前 [CMakeLists.txt](../CMakeLists.txt) 将源码统一编入 `robot3ddemo`。可先按模块组织源码，再在边界稳定后拆分建议目标：
+当前 [CMakeLists.txt](../CMakeLists.txt) 按职责组织构建目标，具体 View 和兼容适配不编入渲染目标：
 
-| 建议目标 | 内容 | 依赖重点 |
+| 构建目标 | 内容 | 依赖重点 |
 | --- | --- | --- |
 | `robot3d_core` | core、domain、ports、application | C++11，不链接 Widgets/OpenGL/Assimp |
 | `robot3d_scene` | 场景契约头文件 | domain；可作为 INTERFACE 目标 |
 | `robot3d_infrastructure` | XML 仓储与具体数据源 | core、Qt Core/Xml 及实际数据源依赖 |
 | `robot3d_presentation` | View 接口、Presenter、展示数据 | core、scene、Qt Core |
-| `robot3d_rendering` | Renderer、Geometry、网格加载 | core 的公共值类型、scene、Qt Gui/OpenGL、Assimp |
-| `robot3ddemo` | shell、composition、入口和资源 | 组合上述模块与 Qt Widgets |
+| `robot3d_rendering` | CPU 网格加载 | Qt Gui、Assimp；不创建 GPU 对象 |
+| `robot3d_rendering_opengl` | OpenGlRobotSceneRenderer、OpenGL Geometry | scene、Qt Gui/OpenGL、CPU 网格加载 |
+| `robot3d_rendering_vtk` | VtkRobotSceneRenderer、VTK 场景适配 | scene、Qt Gui、VTK、Assimp |
+| `robot3d_shell` | 具体 View、视口和输入、composition | presentation、rendering、Qt Widgets |
+| `robot3d_compatibility` | 旧宿主 View 适配 | shell、旧值类型 |
+| `robot3ddemo` | main.cpp 与资源 | shell、Qt Widgets |
 
-禁止通过全局包含目录或将 `demo_support.h` 包含到所有新头文件中掩盖依赖。AUTOMOC 对含 `Q_OBJECT` 的新头文件需要正确登记。
+禁止通过全局包含目录或将 `LegacyRobotTypes.h` 包含到所有新头文件中掩盖依赖。AUTOMOC 对含 `Q_OBJECT` 的新头文件需要正确登记。
 
 沿用现有模型资源部署、MSVC2015 x64 Assimp 依赖、Debug/Release 运行库选择和本机 `QT_DISABLE_SHADER_DISK_CACHE=1` 配置。构建路径与工作目录以现有任务脚本为准。
 
@@ -560,7 +570,7 @@ Qt 排队信号使用自定义值类型时，在建立跨线程连接前完成�
 
 ### 12.3 现有导帧入口
 
-当前已存在以下环境变量，实现在 `DemoUi::OnCheckDump()`：
+当前已存在以下环境变量，实现在 `Robot3dDemoView::OnCheckDump()`：
 
 | 变量 | 当前用途 |
 | --- | --- |
@@ -646,10 +656,10 @@ Qt 排队信号使用自定义值类型时，在建立跨线程连接前完成�
 
 完成首轮重构至少应满足：主要交互通过 Presenter 和应用服务；View 不直接修改业务全局状态；Renderer 不访问业务单例；单位与旋转契约明确；GL 初始化/更新/释放边界可验证；原有主要功能与必要的兼容入口仍可使用。
 
-后续每一批实现应在变更说明中记录“迁移的链路、清除的旧依赖、实际验证、剩余兼容点”。本文维护目标边界，原代码讲解文档维护仍然存在的具体实现。
+后续每一批实现应在变更说明中记录“迁移的链路、清除的旧依赖、实际验证、剩余兼容点”。本文维护架构边界，原代码讲解文档保留历史实现，当前类名和目录以命名约定及第 17 节为准。
 
 
-## 17. 当前落地实现（2026-10-15）
+## 17. 当前落地实现（2026-10-22 命名整理后）
 
 本轮已完成主要交互、状态计算、配置读取、场景交付和 GPU 管理的分层。详细变更与验证方式见 [MVP 重构实施记录](MVP重构实施记录.md)。
 
@@ -658,9 +668,9 @@ Qt 排队信号使用自定义值类型时，在建立跨线程连接前完成�
 | domain / application | [RobotTypes](../include/robot3d/domain/RobotTypes.h)、[Kinematics](../src/robot3d/domain/Kinematics.cpp)、[Robot3dService](../src/robot3d/application/Robot3dService.cpp)、[SimulationService](../src/robot3d/application/SimulationService.cpp) |
 | ports / infrastructure | [IRobotConfigRepository](../include/robot3d/ports/IRobotConfigRepository.h)、[XmlRobotConfigRepository](../src/robot3d/infrastructure/XmlRobotConfigRepository.cpp) |
 | presentation / scene | [IRobot3dView](../include/robot3d/presentation/IRobot3dView.h)、[Robot3dPresenter](../src/robot3d/presentation/Robot3dPresenter.cpp)、[RobotSceneSnapshot](../include/robot3d/scene/RobotSceneSnapshot.h) |
-| rendering | [RobotSceneRenderer](../src/robot3d/rendering/RobotSceneRenderer.cpp)、[RobotMeshLoader](../src/robot3d/rendering/RobotMeshLoader.cpp) 与保留原路径的 Geometry |
-| shell / composition | [DemoUi](../demoui.cpp)、[Robot3dGLWidget](../3dmodel/robot3dglwidget.cpp)、[Robot3dComposition](../src/robot3d/composition/Robot3dComposition.cpp) |
-| tests | [MVP 边界回归](../tests/mvp_tests.cpp)、[OpenGL GUI 回归](../tests/gui_tests.cpp) |
+| rendering | [OpenGlRobotSceneRenderer](../src/robot3d/rendering/opengl/OpenGlRobotSceneRenderer.cpp)、[VtkRobotSceneRenderer](../src/robot3d/rendering/vtk/VtkRobotSceneRenderer.cpp)、[RobotMeshLoader](../src/robot3d/rendering/RobotMeshLoader.cpp) 与 OpenGL 图元 |
+| shell / composition | [Robot3dDemoView](../src/robot3d/shell/Robot3dDemoView.cpp)、[RobotViewport](../src/robot3d/shell/RobotViewport.cpp)、[OpenGlRobotViewport](../src/robot3d/shell/opengl/OpenGlRobotViewport.cpp)、[VtkRobotViewport](../src/robot3d/shell/vtk/VtkRobotViewport.cpp)、[Robot3dComposition](../src/robot3d/composition/Robot3dComposition.cpp) |
+| tests | [MVP 边界回归](../tests/Robot3dMvpTests.cpp)、[OpenGL GUI 回归](../tests/Robot3dGuiTests.cpp) |
 
 主要落实点：
 
@@ -673,7 +683,7 @@ Qt 排队信号使用自定义值类型时，在建立跨线程连接前完成�
 
 保留与后续边界：
 
-- root 的 DemoUi、3dmodel 下的视口/Geometry 保留物理路径，分别归入 shell/rendering 构建目标；源文件归属不依赖目录搬迁。
+- 自有代码已按 MVP 职责迁入 include/src/robot3d：具体 View 归 shell，SceneRenderer 与 OpenGL 图元归 rendering，旧宿主适配归 compatibility；完整映射见 [命名与目录约定](MVP命名与目录约定.md)。
 - `LegacyAxisAngleDeg` 保留旧显示旋转解释；domain 明确采用欧拉角度数与显式弧度轴角类型。第 7 节记录的公式/坐标语义核对仍是后续独立工作。
-- `Robot3dControlWidget` 保留基本宿主方法，旧公开几何字段与外部按钮指针回调改用语义接口；详细范围见实施记录。
+- `LegacyRobot3dViewAdapter` 替代旧 `Robot3dControlWidget`，视口取得方法改为 `openGlViewport()`，其余基本宿主方法保持原语义；旧公开几何字段与外部按钮指针回调使用语义接口，详细范围见实施记录。
 - 当前模拟与配置场景不需要具体实时数据源、全局事件总线或 Facade。后续接入设备/回放时按第 8.6 节增加明确接口与生命周期验证。
