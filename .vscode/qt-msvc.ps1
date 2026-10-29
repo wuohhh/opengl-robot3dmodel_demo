@@ -26,35 +26,50 @@ $buildDir = Join-Path $runDir $Configuration
 $program = Join-Path $buildDir 'bin\robot3ddemo.exe'
 $qmake = Join-Path $qtRoot 'bin\qmake.exe'
 
-function Invoke-Checked {
+function Invoke-Checked
+{
     param([string]$Tool, [string[]]$ToolArguments)
     & $Tool @ToolArguments
-    if ($LASTEXITCODE -ne 0) { throw "$Tool failed with exit code $LASTEXITCODE." }
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw "$Tool failed with exit code $LASTEXITCODE."
+    }
 }
 
-try {
-    foreach ($required in @($qmake, $vcVarsAll)) {
-        if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
+try
+{
+    foreach ($required in @($qmake, $vcVarsAll))
+    {
+        if (-not (Test-Path -LiteralPath $required -PathType Leaf))
+        {
             throw "Required tool not found: $required"
         }
     }
     # Third-party runtime directories must never enter the compiler's PATH.
     $environmentLines = & $env:ComSpec /d /s /c ('"' + $vcVarsAll + '" amd64 >nul && set')
-    if ($LASTEXITCODE -ne 0) { throw 'vcvarsall.bat amd64 failed.' }
-    foreach ($line in $environmentLines) {
-        if ($line -match '^([^=]+)=(.*)$') {
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw 'vcvarsall.bat amd64 failed.'
+    }
+    foreach ($line in $environmentLines)
+    {
+        if ($line -match '^([^=]+)=(.*)$')
+        {
             [Environment]::SetEnvironmentVariable($matches[1], $matches[2], 'Process')
         }
     }
     $env:PATH = (Join-Path $qtRoot 'bin') + ';' + $env:PATH
     $env:VSLANG = '1033'
     $version = & $qmake -query QT_VERSION
-    if ($LASTEXITCODE -ne 0 -or $version -ne '5.9.9') {
+    if ($LASTEXITCODE -ne 0 -or $version -ne '5.9.9')
+    {
         throw "Expected Qt 5.9.9, got: $version"
     }
 
-    if ($Action -eq 'Run') {
-        if (-not (Test-Path -LiteralPath $program -PathType Leaf)) {
+    if ($Action -eq 'Run')
+    {
+        if (-not (Test-Path -LiteralPath $program -PathType Leaf))
+        {
             throw "Executable not found: $program. Run the Build $Configuration task first."
         }
         $env:QT_PLUGIN_PATH = Join-Path $qtRoot 'plugins'
@@ -63,19 +78,35 @@ try {
         $env:QT_DISABLE_SHADER_DISK_CACHE = '1'
         $env:DEMO_RENDERER = 'vtk'
         Push-Location $runDir
-        try { Invoke-Checked $program @() } finally { Pop-Location }
+        try
+        {
+            Invoke-Checked $program @()
+        }
+        finally
+        {
+            Pop-Location
+        }
         exit 0
     }
 
-    foreach ($required in @($cmake, $jom)) {
-        if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
+    foreach ($required in @($cmake, $jom))
+    {
+        if (-not (Test-Path -LiteralPath $required -PathType Leaf))
+        {
             throw "Required tool not found: $required"
         }
     }
-    if ($Action -eq 'Clean') {
-        if (Test-Path -LiteralPath (Join-Path $buildDir 'CMakeCache.txt') -PathType Leaf) {
+
+    if ($Action -eq 'Clean')
+    {
+        if (Test-Path -LiteralPath (Join-Path $buildDir 'CMakeCache.txt') -PathType Leaf)
+        {
             Invoke-Checked $cmake @('--build', $buildDir, '--target', 'clean')
-        } else { Write-Host "Nothing to clean for $Configuration." }
+        }
+        else
+        {
+            Write-Host "Nothing to clean for $Configuration."
+        }
         exit 0
     }
 
@@ -86,28 +117,45 @@ try {
         "-DROBOT3D_QT_ROOT:PATH=$qtRoot",
         "-DROBOT3D_RUNTIME_DIR:PATH=$runDir"
     )
-    if (-not $VtkDir) {
-        $vtkMetadata=Join-Path $projectRoot "build\deps\vtk-sdk-$Configuration.json"
-        if(Test-Path -LiteralPath $vtkMetadata) { $VtkDir=(Get-Content -LiteralPath $vtkMetadata -Raw -Encoding UTF8 | ConvertFrom-Json).vtkDir }
-        else { $VtkDir = Join-Path $projectRoot "build\deps\vtk-9.2.6-v140-$Configuration\install\lib\cmake\vtk-9.2" }
+    if (-not $VtkDir)
+    {
+        $vtkMetadata = Join-Path $projectRoot "build\deps\vtk-sdk-$Configuration.json"
+        if (Test-Path -LiteralPath $vtkMetadata)
+        {
+            $VtkDir = (Get-Content -LiteralPath $vtkMetadata -Raw -Encoding UTF8 | ConvertFrom-Json).vtkDir
+        }
+        else
+        {
+            $VtkDir = Join-Path $projectRoot "build\deps\vtk-9.2.6-v140-$Configuration\install\lib\cmake\vtk-9.2"
+        }
     }
-    if (-not (Test-Path -LiteralPath (Join-Path $VtkDir 'vtk-config.cmake'))) {
+    if (-not (Test-Path -LiteralPath (Join-Path $VtkDir 'vtk-config.cmake')))
+    {
         throw "VTK SDK not found: $VtkDir. Run tools/build-vtk.ps1 -Configuration $Configuration first, or specify -VtkDir."
     }
     $configureArgs += @('-DROBOT3D_WITH_VTK=ON', "-DVTK_DIR:PATH=$VtkDir")
     Write-Host "Configuring VTK $Configuration / Qt $version / MSVC2015 x64"
     Invoke-Checked $cmake $configureArgs
-    if ($Action -eq 'Configure') { exit 0 }
+    if ($Action -eq 'Configure')
+    {
+        exit 0
+    }
 
     $buildArgs = @('--build', $buildDir, '--parallel', "$Jobs")
-    if ($Action -eq 'Rebuild') { $buildArgs += '--clean-first' }
+    if ($Action -eq 'Rebuild')
+    {
+        $buildArgs += '--clean-first'
+    }
     Invoke-Checked $cmake $buildArgs
-    if (-not (Test-Path -LiteralPath $program -PathType Leaf)) {
+    if (-not (Test-Path -LiteralPath $program -PathType Leaf))
+    {
         throw "Build completed without the expected executable: $program"
     }
     Write-Host "Built: $program"
     Write-Host "Working directory: $runDir"
-} catch {
+}
+catch
+{
     [Console]::Error.WriteLine($_.Exception.Message)
     exit 1
 }

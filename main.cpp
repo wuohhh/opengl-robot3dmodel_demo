@@ -24,12 +24,11 @@ static void demoMessageHandler(QtMsgType type, const QMessageLogContext &context
 {
     Q_UNUSED(context)
     static const char *levelStr[] = {"DEBUG", "WARN ", "ERROR", "FATAL", "INFO "};
-    const QString line = QString("[%1][%2] %3")
-            .arg(QDateTime::currentDateTime().toString("HH:mm:ss.zzz"))
-            .arg(levelStr[type])
-            .arg(msg);
+    const QString line =
+        QString("[%1][%2] %3").arg(QDateTime::currentDateTime().toString("HH:mm:ss.zzz")).arg(levelStr[type]).arg(msg);
 
-    if (g_logStream != nullptr) {
+    if (g_logStream != nullptr)
+    {
         *g_logStream << line << "\r\n";
         g_logStream->flush();
     }
@@ -43,7 +42,8 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
 
     QFile logFile("demo_debug.log");
-    if (logFile.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+    if (logFile.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+    {
         g_logStream = new QTextStream(&logFile);
     }
     qInstallMessageHandler(demoMessageHandler);

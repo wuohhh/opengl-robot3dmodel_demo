@@ -17,6 +17,7 @@ archive = os.path.join(root, 'VTK-official-9.2.6.tar.gz')
 source = os.path.join(root, 'VTK-9.2.6')
 marker = os.path.join(source, '.robot3d-source-ready')
 
+
 def fetch(index):
     start = index * CHUNK
     end = min(TOTAL, start + CHUNK) - 1
@@ -42,6 +43,7 @@ def fetch(index):
         except Exception:
             if attempt == 3:
                 raise
+
 
 if not os.path.isfile(archive):
     with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:

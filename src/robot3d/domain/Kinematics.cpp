@@ -4,8 +4,12 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-namespace robot3d { namespace domain {
-namespace {
+namespace robot3d
+{
+namespace domain
+{
+namespace
+{
 
 /** 位姿 -> 齐次矩阵（行主序 R[9] + T[3]）
  *  领域位姿采用 ZYX 欧拉角旋转顺序：R = Rz * Ry * Rx
@@ -29,18 +33,24 @@ void PoseToMatrix(const EulerPoseDeg &p, double R[9], double T[3])
 
     // tmp = Ry * Rx
     double tmp[9];
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 3; ++j) {
+    for (int i = 0; i < 3; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+        {
             double s = 0.0;
-            for (int k = 0; k < 3; ++k) s += Ry[i * 3 + k] * Rx[k * 3 + j];
+            for (int k = 0; k < 3; ++k)
+                s += Ry[i * 3 + k] * Rx[k * 3 + j];
             tmp[i * 3 + j] = s;
         }
     }
     // R = Rz * tmp
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 3; ++j) {
+    for (int i = 0; i < 3; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+        {
             double s = 0.0;
-            for (int k = 0; k < 3; ++k) s += Rz[i * 3 + k] * tmp[k * 3 + j];
+            for (int k = 0; k < 3; ++k)
+                s += Rz[i * 3 + k] * tmp[k * 3 + j];
             R[i * 3 + j] = s;
         }
     }
@@ -60,11 +70,14 @@ void MatrixToPose(const double R[9], const double T[3], EulerPoseDeg &p)
     // R = Rz*Ry*Rx 反解
     const double sy = -R[2 * 3 + 0];
     double rx, ry, rz;
-    if (fabs(sy) < 1.0 - 1e-9) {
+    if (fabs(sy) < 1.0 - 1e-9)
+    {
         ry = asin(sy);
         rx = atan2(R[2 * 3 + 1], R[2 * 3 + 2]);
         rz = atan2(R[1 * 3 + 0], R[0 * 3 + 0]);
-    } else {
+    }
+    else
+    {
         // 万向锁
         ry = (sy > 0) ? M_PI / 2 : -M_PI / 2;
         rx = atan2(-R[1 * 3 + 2], R[1 * 3 + 1]);
@@ -79,9 +92,11 @@ void MatrixToPose(const double R[9], const double T[3], EulerPoseDeg &p)
 void MatMul3(const double A[9], const double B[9], double C[9])
 {
     for (int i = 0; i < 3; ++i)
-        for (int j = 0; j < 3; ++j) {
+        for (int j = 0; j < 3; ++j)
+        {
             double s = 0.0;
-            for (int k = 0; k < 3; ++k) s += A[i * 3 + k] * B[k * 3 + j];
+            for (int k = 0; k < 3; ++k)
+                s += A[i * 3 + k] * B[k * 3 + j];
             C[i * 3 + j] = s;
         }
 }
@@ -95,7 +110,8 @@ void MatMulVec3(const double A[9], const double v[3], double out[3])
 void Transpose3(const double A[9], double AT[9])
 {
     for (int i = 0; i < 3; ++i)
-        for (int j = 0; j < 3; ++j) AT[i * 3 + j] = A[j * 3 + i];
+        for (int j = 0; j < 3; ++j)
+            AT[i * 3 + j] = A[j * 3 + i];
 }
 
 } // namespace
@@ -135,28 +151,24 @@ void inversePose(EulerPoseDeg &result, const EulerPoseDeg &pose)
 
 void forwardKinematics(JointPoseDeg joint_pos, EulerPoseDeg &pose, const DHParameter *DH)
 {
-    double q[6] = {joint_pos.L1, joint_pos.L2, joint_pos.L3,
-                         joint_pos.L4, joint_pos.L5, joint_pos.L6};
+    double q[6] = {joint_pos.L1, joint_pos.L2, joint_pos.L3, joint_pos.L4, joint_pos.L5, joint_pos.L6};
 
     // 累积变换，初始为单位矩阵
     double Racc[9] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
     double Tacc[3] = {0, 0, 0};
 
-    for (int i = 0; i < 6; ++i) {
+    for (int i = 0; i < 6; ++i)
+    {
         const double alpha = DH[i].alpha;
-        const double a     = DH[i].a;
-        const double d     = DH[i].d;
-        const double theta = DH[i].theta + q[i] * M_PI / 180.0;   // 关节角为度
+        const double a = DH[i].a;
+        const double d = DH[i].d;
+        const double theta = DH[i].theta + q[i] * M_PI / 180.0; // 关节角为度
 
         const double ct = cos(theta), st = sin(theta);
         const double ca = cos(alpha), sa = sin(alpha);
 
         // 标准 DH：T = RotZ(theta) * TransZ(d) * TransX(a) * RotX(alpha)
-        const double Ri[9] = {
-            ct, -st * ca,  st * sa,
-            st,  ct * ca, -ct * sa,
-            0,        sa,       ca
-        };
+        const double Ri[9] = {ct, -st * ca, st * sa, st, ct * ca, -ct * sa, 0, sa, ca};
         const double Ti[3] = {a * ct, a * st, d};
 
         // Racc_new = Racc * Ri ;  Tacc_new = Racc * Ti + Tacc
@@ -164,8 +176,10 @@ void forwardKinematics(JointPoseDeg joint_pos, EulerPoseDeg &pose, const DHParam
         MatMul3(Racc, Ri, Rnew);
         MatMulVec3(Racc, Ti, Tadd);
 
-        for (int k = 0; k < 9; ++k) Racc[k] = Rnew[k];
-        for (int k = 0; k < 3; ++k) Tacc[k] += Tadd[k];
+        for (int k = 0; k < 9; ++k)
+            Racc[k] = Rnew[k];
+        for (int k = 0; k < 3; ++k)
+            Tacc[k] += Tadd[k];
     }
 
     MatrixToPose(Racc, Tacc, pose);
@@ -180,12 +194,16 @@ void eulerToAxisAngle(EulerPoseDeg srcPose, AxisAngleRad &dstPose)
     const double trace = R[0] + R[4] + R[8];
     double theta = acos(std::max(-1.0, std::min(1.0, (trace - 1.0) / 2.0)));
 
-    dstPose.X=srcPose.X; dstPose.Y=srcPose.Y; dstPose.Z=srcPose.Z;
-    if (fabs(theta) < 1e-10) {
+    dstPose.X = srcPose.X;
+    dstPose.Y = srcPose.Y;
+    dstPose.Z = srcPose.Z;
+    if (fabs(theta) < 1e-10)
+    {
         dstPose.Rx = dstPose.Ry = dstPose.Rz = 0.0;
         return;
     }
-    if (fabs(theta - M_PI) < 1e-6) {
+    if (fabs(theta - M_PI) < 1e-6)
+    {
         // 180 度特殊处理
         dstPose.Rx = theta * sqrt(std::max(0.0, (R[0] + 1.0) / 2.0));
         dstPose.Ry = theta * sqrt(std::max(0.0, (R[4] + 1.0) / 2.0));
@@ -203,22 +221,22 @@ void axisAngleToEuler(AxisAngleRad srcPose, EulerPoseDeg &dstPose)
     const double rx = srcPose.Rx, ry = srcPose.Ry, rz = srcPose.Rz;
     const double theta = sqrt(rx * rx + ry * ry + rz * rz);
 
-    dstPose.X=srcPose.X; dstPose.Y=srcPose.Y; dstPose.Z=srcPose.Z;
-    if (theta < 1e-10) {
+    dstPose.X = srcPose.X;
+    dstPose.Y = srcPose.Y;
+    dstPose.Z = srcPose.Z;
+    if (theta < 1e-10)
+    {
         dstPose.Rx = dstPose.Ry = dstPose.Rz = 0.0;
         return;
     }
     const double u = rx / theta, v = ry / theta, w = rz / theta;
     const double c = cos(theta), s = sin(theta), t = 1.0 - c;
 
-    const double R[9] = {
-        u * u * t + c,     u * v * t - w * s, u * w * t + v * s,
-        u * v * t + w * s, v * v * t + c,     v * w * t - u * s,
-        u * w * t - v * s, v * w * t + u * s, w * w * t + c
-    };
+    const double R[9] = {u * u * t + c,     u * v * t - w * s, u * w * t + v * s, u * v * t + w * s, v * v * t + c,
+                         v * w * t - u * s, u * w * t - v * s, v * w * t + u * s, w * w * t + c};
     double T[3] = {srcPose.X, srcPose.Y, srcPose.Z};
     MatrixToPose(R, T, dstPose);
 }
 
-
-}}
+}
+}

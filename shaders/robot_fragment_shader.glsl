@@ -4,20 +4,23 @@ precision mediump int;
 precision mediump float;
 #endif
 
+/** @brief 方向光反射计算使用的材质参数。 */
 struct Material
 {
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
-    float shininess;
+    vec3 ambient;    ///< 材质对环境光的 RGB 反射系数。
+    vec3 diffuse;    ///< 材质对漫反射光的 RGB 反射系数。
+    vec3 specular;   ///< 材质对镜面高光的 RGB 反射系数。
+    float shininess; ///< 镜面高光指数，用作 pow 的指数，控制高光集中程度。
 };
 
-struct Light {
-    vec3 direction;
+/** @brief 方向光的传播方向及各类光照的 RGB 强度。 */
+struct Light
+{
+    vec3 direction; ///< 光线传播方向，计算入射光方向时取反并归一化。
 
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
+    vec3 ambient;  ///< 环境光的 RGB 强度。
+    vec3 diffuse;  ///< 漫反射光的 RGB 强度。
+    vec3 specular; ///< 镜面反射光的 RGB 强度。
 };
 
 varying vec3 fragPos;
@@ -51,14 +54,6 @@ void main()
     vec3 norm = normalize(Normal);
     vec3 viewDir = normalize(viewPos - fragPos);
     vec3 result = CalcDirLight(light1, norm, viewDir);
-    gl_FragColor = vec4(mater*result, 1.0);
-   // gl_FragColor = vec4(mater*vec3(0.7,0.8,0.7), 1.0);
+    gl_FragColor = vec4(mater * result, 1.0);
+    // gl_FragColor = vec4(mater*vec3(0.7,0.8,0.7), 1.0);
 }
-
-
-
-
-
-
-
-

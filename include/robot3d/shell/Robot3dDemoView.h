@@ -11,17 +11,24 @@ class QCheckBox;
 #ifdef ROBOT3D_WITH_VTK
 class PointCloudViewerDialog;
 #endif
-namespace robot3d { namespace composition { class Robot3dComposition; } }
-class Robot3dDemoView : public QWidget, public robot3d::presentation::IRobot3dView {
+namespace robot3d
+{
+namespace composition
+{
+class Robot3dComposition;
+}
+}
+class Robot3dDemoView : public QWidget, public robot3d::presentation::IRobot3dView
+{
     Q_OBJECT
 public:
-    explicit Robot3dDemoView(QWidget* parent=nullptr);
+    explicit Robot3dDemoView(QWidget *parent = nullptr);
     ~Robot3dDemoView();
-    bool prepareModel(robot3d::domain::RobotConfigurationPtr config,std::string& error) override;
-    void showState(const robot3d::presentation::Robot3dDisplayModel& model) override;
-    void submitScene(const robot3d::scene::RobotSceneSnapshot& scene) override;
-    void showError(const std::string& error) override;
-    void appendLog(const std::string& message) override;
+    bool prepareModel(robot3d::domain::RobotConfigurationPtr config, std::string &error) override;
+    void showState(const robot3d::presentation::Robot3dDisplayModel &model) override;
+    void submitScene(const robot3d::scene::RobotSceneSnapshot &scene) override;
+    void showError(const std::string &error) override;
+    void appendLog(const std::string &message) override;
 private slots:
     void OnRobotTypeChanged(int index);
     void OnJointSliderChanged();
@@ -30,22 +37,24 @@ private slots:
     void OnResetJoint();
     void OnDisplayFlagChanged();
     void OnFramePresented(qulonglong revision);
+
 private:
-    QWidget* BuildControlPanel();
+    QWidget *BuildControlPanel();
 #ifdef ROBOT3D_WITH_VTK
-    PointCloudViewerDialog* pointCloudDialog_=nullptr;
+    PointCloudViewerDialog *pointCloudDialog_ = nullptr;
 #endif
     void OnCheckDump();
     std::unique_ptr<robot3d::composition::Robot3dComposition> composition_;
     robot3d::presentation::Robot3dDisplayModel model_;
-    RobotViewport* m_viewport=nullptr;
-    QComboBox* m_backendCb=nullptr;
-    QComboBox *m_robotTypeCb=nullptr,*m_coordSysSelectCb=nullptr;
-    QSlider* m_jointSlider[6]={};
-    QLabel* m_jointLabel[6]={};
-    QLabel *m_poseLabel=nullptr,*m_speedLabel=nullptr;
-    QCheckBox *m_simCb=nullptr,*m_coordSysCb=nullptr,*m_waypointCb=nullptr,*m_pathCb=nullptr,*m_toolCb=nullptr;
-    QPlainTextEdit* m_logEdit=nullptr;
-    bool m_updatingSliders=false,m_dumpShotDone=false,m_dumpInProgress=false;
-    int dumpStage_=0;
+    RobotViewport *m_viewport = nullptr;
+    QComboBox *m_backendCb = nullptr;
+    QComboBox *m_robotTypeCb = nullptr, *m_coordSysSelectCb = nullptr;
+    QSlider *m_jointSlider[6] = {};
+    QLabel *m_jointLabel[6] = {};
+    QLabel *m_poseLabel = nullptr, *m_speedLabel = nullptr;
+    QCheckBox *m_simCb = nullptr, *m_coordSysCb = nullptr, *m_waypointCb = nullptr, *m_pathCb = nullptr,
+              *m_toolCb = nullptr;
+    QPlainTextEdit *m_logEdit = nullptr;
+    bool m_updatingSliders = false, m_dumpShotDone = false, m_dumpInProgress = false;
+    int dumpStage_ = 0;
 };

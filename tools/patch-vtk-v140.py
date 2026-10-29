@@ -5,6 +5,7 @@ from pathlib import Path
 
 root = Path(sys.argv[1]) / "Parallel" / "DIY"
 
+
 def patch(name, old, new):
     path = root / name
     raw = path.read_bytes()
@@ -26,6 +27,7 @@ def patch(name, old, new):
     assert path.read_bytes() == source.encode(encoding)
     print("VTK v140 parser workaround verified:", name,
           hashlib.sha256(path.read_bytes()).hexdigest())
+
 
 # QueryPointWorker is concrete: v140 rejects the redundant disambiguator.
 patch("vtkDIYGhostUtilities.cxx",

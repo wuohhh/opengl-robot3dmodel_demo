@@ -20,13 +20,13 @@ void main()
 {
     // Calculate vertex position in screen space
     //gl_Position = mvp_matrix * a_position;
-    gl_Position = mvp_matrix * vec4(a_position,1.0);
-    fragPos =vec3((model*vec4(a_position,1.0)));
+    gl_Position = mvp_matrix * vec4(a_position, 1.0);
+    fragPos = vec3((model * vec4(a_position, 1.0)));
     //normal=a_normal;
-    Normal=vec3(model*vec4(a_normal,0.0));
+    Normal = vec3(model * vec4(a_normal, 0.0));
 
     // Pass texture coordinate to fragment shader
     // Value will be automatically interpolated to fragments inside polygon faces
-    mater=a_material;
+    mater = a_material;
 }
 //! [0]

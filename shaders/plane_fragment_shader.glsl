@@ -9,6 +9,5 @@ uniform vec3 toyColor;
 uniform float alpha;
 void main()
 {
-    gl_FragColor =vec4(lightColor * toyColor,alpha);
+    gl_FragColor = vec4(lightColor * toyColor, alpha);
 }
-

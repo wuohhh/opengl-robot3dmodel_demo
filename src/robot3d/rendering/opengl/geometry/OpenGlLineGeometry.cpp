@@ -1,6 +1,6 @@
-﻿#include"robot3d/rendering/opengl/geometry/OpenGlLineGeometry.h"
+﻿#include "robot3d/rendering/opengl/geometry/OpenGlLineGeometry.h"
 
-OpenGlLineGeometry::OpenGlLineGeometry(OpenGlLineData lineMsg):OpenGlGeometryBase()
+OpenGlLineGeometry::OpenGlLineGeometry(OpenGlLineData lineMsg) : OpenGlGeometryBase()
 {
 
     this->lineMsg = lineMsg;
@@ -11,37 +11,42 @@ OpenGlLineGeometry::OpenGlLineGeometry(OpenGlLineData lineMsg):OpenGlGeometryBas
     vertex_data_Buf.release();
 }
 
-OpenGlLineGeometry::OpenGlLineGeometry(QVector<QVector3D> points, QColor color,int maxNum):OpenGlGeometryBase()
+OpenGlLineGeometry::OpenGlLineGeometry(QVector<QVector3D> points, QColor color, int maxNum) : OpenGlGeometryBase()
 {
-     this->maxNum=maxNum;
+    this->maxNum = maxNum;
     this->pointList.append(points);
-     this->lineMsg.color=color;
-     GenerateLinesData(points);
-     num_vertex_data = vertex_data.size();
-     vertex_data_Buf.bind();
-     vertex_data_Buf.allocate(vertex_data.data(), maxNum * sizeof(OpenGlPositionVertex));
-     vertex_data_Buf.release();
+    this->lineMsg.color = color;
+    GenerateLinesData(points);
+    num_vertex_data = vertex_data.size();
+    vertex_data_Buf.bind();
+    vertex_data_Buf.allocate(vertex_data.data(), maxNum * sizeof(OpenGlPositionVertex));
+    vertex_data_Buf.release();
 }
 
 OpenGlLineGeometry::~OpenGlLineGeometry()
 {
-
 }
 
 void OpenGlLineGeometry::SetLineData(QVector3D startPt, QVector3D endPt)
 {
-    lineMsg.startPt=startPt; lineMsg.endPt=endPt;
-    GenerateLineData(startPt,endPt); uploadVertices();
+    lineMsg.startPt = startPt;
+    lineMsg.endPt = endPt;
+    GenerateLineData(startPt, endPt);
+    uploadVertices();
 }
 
-void OpenGlLineGeometry::SetLineData(QVector<QVector3D> points)         //绘制线的顶点数不再增删，只修改线段组成的顶点
+void OpenGlLineGeometry::SetLineData(QVector<QVector3D> points) //绘制线的顶点数不再增删，只修改线段组成的顶点
 {
-    pointList=points; GenerateLinesData(points); uploadVertices();
+    pointList = points;
+    GenerateLinesData(points);
+    uploadVertices();
 }
 
 void OpenGlLineGeometry::AddDeleteLineData(QVector<QVector3D> points)
 {
-    pointList=points; GenerateLinesData(points); uploadVertices();
+    pointList = points;
+    GenerateLinesData(points);
+    uploadVertices();
 }
 
 bool OpenGlLineGeometry::initShaders()
@@ -62,16 +67,16 @@ bool OpenGlLineGeometry::initShaders()
     if (!program.bind())
         return false;
 
-    return  true;
+    return true;
 }
 
-
-
-void OpenGlLineGeometry::drawGeometry(QMatrix4x4 model,QMatrix4x4 mvpMatrix, QMatrix4x4 lightMatrix)
+void OpenGlLineGeometry::drawGeometry(QMatrix4x4 model, QMatrix4x4 mvpMatrix, QMatrix4x4 lightMatrix)
 {
     program.bind();
-    program.setUniformValue("lightColor", QVector3D(1.0,1.0,1.0));
-    program.setUniformValue("toyColor", QVector3D(this->lineMsg.color.red()/255.0, this->lineMsg.color.green()/255.0, this->lineMsg.color.blue()/255.0));
+    program.setUniformValue("lightColor", QVector3D(1.0, 1.0, 1.0));
+    program.setUniformValue("toyColor",
+                            QVector3D(this->lineMsg.color.red() / 255.0, this->lineMsg.color.green() / 255.0,
+                                      this->lineMsg.color.blue() / 255.0));
     program.setUniformValue("mvp_matrix", mvpMatrix);
 
     vertex_data_Buf.bind();
@@ -85,27 +90,25 @@ void OpenGlLineGeometry::drawGeometry(QMatrix4x4 model,QMatrix4x4 mvpMatrix, QMa
     glLineWidth(3);
     //需要改成绘制直线GL_Lines GL_TRIANGLE_STRIP GL_LINES
     //glDrawElements(GL_LINE_STRIP, num_vertex_index, GL_UNSIGNED_INT, 0);
-    glDrawArrays(GL_LINE_STRIP, 0,num_vertex_data);
-
+    glDrawArrays(GL_LINE_STRIP, 0, num_vertex_data);
 }
-void OpenGlLineGeometry::GenerateLineData(QVector3D pointStart,QVector3D pointEnd)
+void OpenGlLineGeometry::GenerateLineData(QVector3D pointStart, QVector3D pointEnd)
 {
-    vertex_data.clear();      //顶点数据需要清空，插入新的顶点数据
+    vertex_data.clear(); //顶点数据需要清空，插入新的顶点数据
     OpenGlPositionVertex temp0;
-    temp0.position = pointStart*robot3d::rendering::kMillimetersToModelUnits;
+    temp0.position = pointStart * robot3d::rendering::kMillimetersToModelUnits;
     OpenGlPositionVertex temp1;
-    temp1.position = pointEnd*robot3d::rendering::kMillimetersToModelUnits;
+    temp1.position = pointEnd * robot3d::rendering::kMillimetersToModelUnits;
     vertex_data.push_back(temp0);
     vertex_data.push_back(temp1);
-
 }
 void OpenGlLineGeometry::GenerateLinesData(QVector<QVector3D> points)
 {
-    vertex_data.clear();      //顶点数据需要清空，插入新的顶点数据
-    for(int index=0;index<points.size();index++)
+    vertex_data.clear(); //顶点数据需要清空，插入新的顶点数据
+    for (int index = 0; index < points.size(); index++)
     {
         OpenGlPositionVertex temp0;
-        temp0.position = points[index]*robot3d::rendering::kMillimetersToModelUnits;
+        temp0.position = points[index] * robot3d::rendering::kMillimetersToModelUnits;
         vertex_data.push_back(temp0);
     }
 }

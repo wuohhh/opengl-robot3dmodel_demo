@@ -1,0 +1,10 @@
+root = true
+
+# Preserve the existing BOM choice of each source file.
+[{main.cpp,CMakeLists.txt,include/**,src/**,tests/**,shaders/**,tools/**,.vscode/qt-msvc.ps1}]
+indent_style = space
+indent_size = 4
+tab_width = 4
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
