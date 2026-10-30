@@ -13,6 +13,10 @@ struct CameraState
     QQuaternion rotation;        ///< 用户交互累积的视图旋转四元数。
     QVector3D translation;       ///< 视图平移量，绘制时按当前显示坐标基进行变换。
     QVector3D rotationCenter;    ///< 交互旋转的枢轴位置，使用渲染模型单位。
+    bool focusOverride = false;
+    QVector3D focusPoint;
+    double viewDistance = 150;
+    double sceneRadius = 100;
     double scale = 1;            ///< 无量纲视图缩放倍率，默认保持原始比例。
 };
 }

@@ -26,6 +26,9 @@ public:
     {
         return bool(renderer_);
     }
+    bool prepareWorkpieces(const robot3d::scene::RobotSceneSnapshot &scene, std::string &error);
+    void focusWorkpiece(const QString &id);
+    void fitAllWorkpieces();
     void cleanupGL();
     robot3d::rendering::CameraState cameraState() const
     {
@@ -48,6 +51,7 @@ public:
         update();
     }
 signals:
+    void workpieceSelected(const QString &id);
     void rendererReady();
     void renderFailed(const QString &error);
     void framePresented(qulonglong revision);
@@ -82,6 +86,8 @@ private:
     robot3d::scene::RobotDisplayOptions options_;
     QMatrix4x4 projection;
     QVector2D curPos;
+    QPointF workpiecePressPoint_;
+    bool workpieceDragged_ = false;
     bool dirty_ = false, dragging_ = false, install_ = false;
     int rotateTranslateStatus = 0;
     QSlider *zoomSlider = nullptr;

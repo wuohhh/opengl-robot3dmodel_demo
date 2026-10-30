@@ -1,5 +1,7 @@
 #pragma once
 #include <memory>
+#include <QSize>
+#include <QPointF>
 #include <QString>
 #include "robot3d/scene/RobotSceneSnapshot.h"
 #include "robot3d/rendering/CameraState.h"
@@ -15,6 +17,8 @@ public:
     explicit VtkRobotSceneRenderer(vtkRenderer *renderer);
     ~VtkRobotSceneRenderer();
     bool prepareModel(domain::RobotConfigurationPtr configuration, QString &error);
+    bool prepareWorkpieces(const scene::RobotSceneSnapshot &scene, QString &error);
+    QString pickWorkpiece(const CameraState &camera, const QSize &size, const QPointF &point) const;
     void apply(const scene::RobotSceneSnapshot &scene);
     void updateCamera(const CameraState &camera);
     QMatrix4x4 coordinateMatrix() const;

@@ -1,5 +1,6 @@
 #pragma once
 #include "robot3d/domain/RobotTypes.h"
+#include "robot3d/domain/Workpiece.h"
 #include "robot3d/scene/RobotDisplayOptions.h"
 namespace robot3d
 {
@@ -42,6 +43,8 @@ struct SafePlane
 struct RobotSceneSnapshot
 {
     domain::RobotStateSnapshot state;       ///< 机器人领域状态，包含当前关节、TCP、路点和轨迹。
+    std::vector<domain::WorkpieceInstance> workpieces;
+    std::string selectedWorkpieceId;
     RobotDisplayOptions options;            ///< 面板、场景对象和安装姿态模式的显示开关。
     LegacyAxisAngleDeg coordinatePose = {}; ///< 所选坐标系的显示位姿，沿用旧视口的度制轴角约定。
     std::vector<ToolShape> tools;           ///< 工具几何体列表；为空时渲染器使用当前 TCP 处的默认工具。

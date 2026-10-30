@@ -4,9 +4,15 @@ param(
     [string]$Configuration = 'Debug',
     [ValidateSet('Configure', 'Build', 'Rebuild', 'Clean', 'Run')]
     [string]$Action = 'Build',
-    # Retain the legacy argument for existing command lines; VTK is always enabled.
+    # Retain the legacy argument for existing command lines; VTK is enabled by default.
     [switch]$WithVTK,
     [string]$VtkDir = '',
+
+    [string]$OcctDir = '',
+
+    [switch]$WithoutOCCT,
+
+    [switch]$WithoutVTK,
     [ValidateRange(1, 64)]
     [int]$Jobs = [Math]::Min(4, [Environment]::ProcessorCount)
 )
@@ -20,7 +26,7 @@ $vcVarsAll = 'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.b
 $jom = 'C:\Qt\Qt5.9.9\Tools\QtCreator\bin\jom.exe'
 $cmake = 'C:\CMake\bin\cmake.exe'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$runName = 'build\vscode-qt5.9.9-msvc2015_64-vtk'
+$runName = if ($WithoutVTK) { 'build\vscode-qt5.9.9-msvc2015_64' } else { 'build\vscode-qt5.9.9-msvc2015_64-vtk' }
 $runDir = Join-Path $projectRoot $runName
 $buildDir = Join-Path $runDir $Configuration
 $program = Join-Path $buildDir 'bin\robot3ddemo.exe'
@@ -76,7 +82,7 @@ try
         $env:QT_QPA_PLATFORM_PLUGIN_PATH = Join-Path $qtRoot 'plugins\platforms'
         # Qt 5.9 shader binary caches crash this machine's Intel OpenGL driver.
         $env:QT_DISABLE_SHADER_DISK_CACHE = '1'
-        $env:DEMO_RENDERER = 'vtk'
+        $env:DEMO_RENDERER = if ($WithoutVTK) { 'opengl' } else { 'vtk' }
         Push-Location $runDir
         try
         {
@@ -117,24 +123,57 @@ try
         "-DROBOT3D_QT_ROOT:PATH=$qtRoot",
         "-DROBOT3D_RUNTIME_DIR:PATH=$runDir"
     )
-    if (-not $VtkDir)
+    if ($WithoutVTK)
     {
-        $vtkMetadata = Join-Path $projectRoot "build\deps\vtk-sdk-$Configuration.json"
-        if (Test-Path -LiteralPath $vtkMetadata)
-        {
-            $VtkDir = (Get-Content -LiteralPath $vtkMetadata -Raw -Encoding UTF8 | ConvertFrom-Json).vtkDir
-        }
-        else
-        {
-            $VtkDir = Join-Path $projectRoot "build\deps\vtk-9.2.6-v140-$Configuration\install\lib\cmake\vtk-9.2"
-        }
+        $configureArgs += '-DROBOT3D_WITH_VTK=OFF'
     }
-    if (-not (Test-Path -LiteralPath (Join-Path $VtkDir 'vtk-config.cmake')))
+    else
     {
-        throw "VTK SDK not found: $VtkDir. Run tools/build-vtk.ps1 -Configuration $Configuration first, or specify -VtkDir."
+        if (-not $VtkDir)
+        {
+            $vtkMetadata = Join-Path $projectRoot "build\deps\vtk-sdk-$Configuration.json"
+            if (Test-Path -LiteralPath $vtkMetadata)
+            {
+                $VtkDir = (Get-Content -LiteralPath $vtkMetadata -Raw -Encoding UTF8 | ConvertFrom-Json).vtkDir
+            }
+            else
+            {
+                $VtkDir = Join-Path $projectRoot "build\deps\vtk-9.2.6-v140-$Configuration\install\lib\cmake\vtk-9.2"
+            }
+        }
+        if (-not (Test-Path -LiteralPath (Join-Path $VtkDir 'vtk-config.cmake')))
+        {
+            throw "VTK SDK not found: $VtkDir. Run tools/build-vtk.ps1 -Configuration $Configuration first, or specify -VtkDir."
+        }
+        $configureArgs += @('-DROBOT3D_WITH_VTK=ON', "-DVTK_DIR:PATH=$VtkDir")
     }
-    $configureArgs += @('-DROBOT3D_WITH_VTK=ON', "-DVTK_DIR:PATH=$VtkDir")
-    Write-Host "Configuring VTK $Configuration / Qt $version / MSVC2015 x64"
+    if ($WithoutOCCT)
+    {
+        $configureArgs += '-DROBOT3D_WITH_OCCT=OFF'
+    }
+    else
+    {
+        if (-not $OcctDir)
+        {
+            $occtMetadata = Join-Path $projectRoot "build\deps\occt-sdk-$Configuration.json"
+            if (-not (Test-Path -LiteralPath $occtMetadata))
+            {
+                Invoke-Checked 'powershell.exe' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
+                    (Join-Path $projectRoot 'tools\build-occt.ps1'), '-Configuration', $Configuration,
+                    '-Jobs', "$Jobs", '-IfMissing')
+            }
+            if (Test-Path -LiteralPath $occtMetadata)
+            {
+                $OcctDir = (Get-Content -LiteralPath $occtMetadata -Raw -Encoding UTF8 | ConvertFrom-Json).occtDir
+            }
+        }
+        if (-not $OcctDir)
+        {
+            throw 'OCCT SDK metadata missing. Run tools/build-occt.ps1 or specify -OcctDir.'
+        }
+        $configureArgs += @('-DROBOT3D_WITH_OCCT=ON', "-DOpenCASCADE_DIR:PATH=$OcctDir")
+    }
+    Write-Host "Configuring $Configuration / Qt $version / MSVC2015 x64 / VTK=$(-not $WithoutVTK) / OCCT=$(-not $WithoutOCCT)"
     Invoke-Checked $cmake $configureArgs
     if ($Action -eq 'Configure')
     {

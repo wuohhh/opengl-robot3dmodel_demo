@@ -30,7 +30,12 @@ set(ROBOT3D_QT_ROOT
     CACHE PATH "Qt 5.9.9 MSVC2015 x64 installation"
 )
 list(PREPEND CMAKE_PREFIX_PATH "${ROBOT3D_QT_ROOT}")
-find_package(Qt5 5.9.9 EXACT REQUIRED COMPONENTS Core Gui Widgets Xml OpenGL)
+find_package(Qt5 5.9.9 EXACT REQUIRED COMPONENTS Core Gui Widgets Xml OpenGL Concurrent)
+
+option(ROBOT3D_WITH_OCCT "Build STEP/IGES import with fixed OCCT 7.9.1" ON)
+if(ROBOT3D_WITH_OCCT)
+    find_package(OpenCASCADE 7.9.1 EXACT CONFIG REQUIRED)
+endif()
 option(ROBOT3D_WITH_VTK "Build the optional VTK comparison backend" OFF)
 if(ROBOT3D_WITH_VTK)
     find_package(Qt5 5.9.9 EXACT REQUIRED COMPONENTS Concurrent)
@@ -87,8 +92,30 @@ add_library(
 target_include_directories(robot3d_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set_target_properties(robot3d_core PROPERTIES AUTOMOC OFF)
 robot3d_configure_target(robot3d_core)
+add_library(robot3d_workpiece_core STATIC
+    src/robot3d/application/WorkpieceService.cpp
+    include/robot3d/domain/Workpiece.h
+    include/robot3d/application/WorkpieceService.h
+)
+target_include_directories(robot3d_workpiece_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set_target_properties(robot3d_workpiece_core PROPERTIES AUTOMOC OFF)
+robot3d_configure_target(robot3d_workpiece_core)
+
+add_library(robot3d_workpiece_io STATIC
+    src/robot3d/infrastructure/WorkpieceFileLoader.cpp
+    src/robot3d/infrastructure/WorkpieceSceneStore.cpp
+)
+target_link_libraries(robot3d_workpiece_io PUBLIC robot3d_workpiece_core Qt5::Core PRIVATE robot3d_assimp)
+robot3d_configure_target(robot3d_workpiece_io)
+if(ROBOT3D_WITH_OCCT)
+    target_compile_definitions(robot3d_workpiece_io PRIVATE ROBOT3D_WITH_OCCT)
+    target_include_directories(robot3d_workpiece_io PRIVATE "${OpenCASCADE_INCLUDE_DIR}")
+    target_link_directories(robot3d_workpiece_io PUBLIC "${OpenCASCADE_LIBRARY_DIR}")
+    target_link_libraries(robot3d_workpiece_io PRIVATE TKDESTEP TKDEIGES TKMesh TKXCAF TKernel TKMath TKBRep TKG3d TKG2d TKTopAlgo TKCDF TKLCAF TKCAF)
+endif()
+
 add_library(robot3d_scene INTERFACE)
-target_link_libraries(robot3d_scene INTERFACE robot3d_core)
+target_link_libraries(robot3d_scene INTERFACE robot3d_core robot3d_workpiece_core)
 add_library(robot3d_infrastructure STATIC src/robot3d/infrastructure/XmlRobotConfigRepository.cpp)
 target_link_libraries(
     robot3d_infrastructure
@@ -163,6 +190,12 @@ endif()
 
 add_library(
     robot3d_shell STATIC
+    src/robot3d/shell/WorkpiecePreviewWidget.cpp
+    include/robot3d/shell/WorkpiecePreviewWidget.h
+    src/robot3d/shell/WorkpieceImportDialog.cpp
+    include/robot3d/shell/WorkpieceImportDialog.h
+    src/robot3d/shell/WorkpiecePanel.cpp
+    include/robot3d/shell/WorkpiecePanel.h
     src/robot3d/shell/Robot3dDemoView.cpp
     include/robot3d/shell/Robot3dDemoView.h
     src/robot3d/shell/RobotViewport.cpp
@@ -177,7 +210,7 @@ add_library(
 target_link_libraries(
     robot3d_shell
     PUBLIC robot3d_presentation robot3d_rendering_opengl Qt5::Widgets
-    PRIVATE robot3d_infrastructure
+    PRIVATE robot3d_infrastructure robot3d_workpiece_io Qt5::Concurrent
 )
 robot3d_configure_target(robot3d_shell)
 if(ROBOT3D_WITH_VTK)
@@ -218,6 +251,12 @@ set_target_properties(
 option(ROBOT3D_BUILD_TESTS "Build MVP boundary regression tests" ON)
 if(ROBOT3D_BUILD_TESTS)
     enable_testing()
+    add_executable(robot3d_workpiece_tests tests/WorkpieceTests.cpp)
+    target_link_libraries(robot3d_workpiece_tests PRIVATE robot3d_workpiece_io)
+    set_target_properties(robot3d_workpiece_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    robot3d_configure_target(robot3d_workpiece_tests)
+    add_test(NAME robot3d_workpiece COMMAND robot3d_workpiece_tests)
+    set_tests_properties(robot3d_workpiece PROPERTIES ENVIRONMENT "PATH=${ROBOT3D_QT_ROOT}/bin\;$ENV{PATH}")
     add_executable(robot3d_pointcloud_tests tests/PointCloudFileLoaderTests.cpp)
     target_link_libraries(robot3d_pointcloud_tests PRIVATE robot3d_pointcloud)
     robot3d_configure_target(robot3d_pointcloud_tests)
@@ -277,6 +316,9 @@ add_custom_target(
     VERBATIM
 )
 add_dependencies(robot3ddemo robot3d_assets)
+if(TARGET robot3d_workpiece_tests)
+    add_dependencies(robot3d_workpiece_tests robot3d_assets)
+endif()
 if(TARGET robot3d_gui_tests)
     add_dependencies(robot3d_gui_tests robot3d_assets)
 endif()
@@ -300,5 +342,110 @@ if(ROBOT3D_WITH_VTK)
         add_dependencies(robot3d_vtk_tests robot3d_vtk_runtime robot3d_assets)
     endif()
 endif()
+if(ROBOT3D_WITH_OCCT)
+find_program(ROBOT3D_RUNTIME_PYTHON NAMES python.exe python PATHS "C:/Python/Python37" REQUIRED)
+    execute_process(
+        COMMAND "${ROBOT3D_RUNTIME_PYTHON}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/occt-runtime-files.py" "${OpenCASCADE_BINARY_DIR}"
+        RESULT_VARIABLE ROBOT3D_OCCT_RUNTIME_RESULT
+        OUTPUT_VARIABLE ROBOT3D_OCCT_DLLS
+        ERROR_VARIABLE ROBOT3D_OCCT_RUNTIME_ERROR
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(NOT ROBOT3D_OCCT_RUNTIME_RESULT EQUAL 0)
+        message(FATAL_ERROR "OCCT runtime validation failed: ${ROBOT3D_OCCT_RUNTIME_ERROR}")
+    endif()
+    set(ROBOT3D_OCCT_RESOURCE_COMMAND)
+    if(IS_DIRECTORY "${OpenCASCADE_RESOURCE_DIR}")
+        set(ROBOT3D_OCCT_RESOURCE_COMMAND COMMAND "${CMAKE_COMMAND}" -E copy_directory "${OpenCASCADE_RESOURCE_DIR}" "${CMAKE_BINARY_DIR}/bin/occt-resources")
+    endif()
+    add_custom_target(robot3d_occt_runtime
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_BINARY_DIR}/bin"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${ROBOT3D_OCCT_DLLS} "${CMAKE_BINARY_DIR}/bin"
+        ${ROBOT3D_OCCT_RESOURCE_COMMAND}
+        VERBATIM)
+    foreach(t robot3ddemo robot3d_gui_tests robot3d_vtk_tests robot3d_workpiece_tests)
+        if(TARGET ${t})
+            add_dependencies(${t} robot3d_occt_runtime)
+        endif()
+    endforeach()
+endif()
+
+add_custom_target(robot3d_license_runtime ALL
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/licenses" "${CMAKE_BINARY_DIR}/bin/licenses"
+    VERBATIM)
+add_dependencies(robot3ddemo robot3d_license_runtime)
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT robot3ddemo)
 set_property(TARGET robot3ddemo PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${ROBOT3D_RUNTIME_DIR}")
+
+if(ROBOT3D_BUILD_TESTS)
+    add_executable(robot3d_workpiece_gui_tests tests/WorkpieceGuiTests.cpp demo.qrc)
+    target_link_libraries(robot3d_workpiece_gui_tests PRIVATE robot3d_shell robot3d_workpiece_io)
+    if(WIN32)
+        target_link_libraries(robot3d_workpiece_gui_tests PRIVATE Psapi)
+    endif()
+    if(ROBOT3D_WITH_OCCT)
+        target_compile_definitions(robot3d_workpiece_gui_tests PRIVATE ROBOT3D_WITH_OCCT)
+        target_include_directories(robot3d_workpiece_gui_tests PRIVATE "${OpenCASCADE_INCLUDE_DIR}")
+        target_link_libraries(robot3d_workpiece_gui_tests PRIVATE TKPrim TKDESTEP TKDEIGES)
+    endif()
+    add_dependencies(robot3d_workpiece_gui_tests robot3d_license_runtime)
+
+    robot3d_configure_target(robot3d_workpiece_gui_tests)
+    set_target_properties(robot3d_workpiece_gui_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    add_dependencies(robot3d_workpiece_gui_tests robot3d_assets)
+    add_test(NAME robot3d_workpiece_gui COMMAND robot3d_workpiece_gui_tests "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/workpiece-validation")
+    set_tests_properties(robot3d_workpiece_gui PROPERTIES
+        ENVIRONMENT "PATH=${ROBOT3D_QT_ROOT}/bin\;$ENV{PATH};QT_DISABLE_SHADER_DISK_CACHE=1;QT_PLUGIN_PATH=${ROBOT3D_QT_ROOT}/plugins;DEMO_RENDERER=opengl"
+        TIMEOUT 150)
+    if(ROBOT3D_WITH_VTK)
+        add_dependencies(robot3d_workpiece_gui_tests robot3d_vtk_runtime)
+    endif()
+    if(ROBOT3D_WITH_OCCT)
+        add_dependencies(robot3d_workpiece_gui_tests robot3d_occt_runtime)
+    endif()
+endif()
+
+if(ROBOT3D_BUILD_TESTS)
+    add_executable(robot3d_workpiece_rendering_tests tests/WorkpieceRenderingTests.cpp demo.qrc)
+    target_link_libraries(robot3d_workpiece_rendering_tests PRIVATE robot3d_shell)
+    robot3d_configure_target(robot3d_workpiece_rendering_tests)
+    set_target_properties(robot3d_workpiece_rendering_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    add_dependencies(robot3d_workpiece_rendering_tests robot3d_assets)
+    add_test(NAME robot3d_workpiece_rendering COMMAND robot3d_workpiece_rendering_tests "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/workpiece-rendering-validation")
+    set_tests_properties(robot3d_workpiece_rendering PROPERTIES ENVIRONMENT "PATH=${ROBOT3D_QT_ROOT}/bin\;$ENV{PATH};QT_DISABLE_SHADER_DISK_CACHE=1;QT_PLUGIN_PATH=${ROBOT3D_QT_ROOT}/plugins;DEMO_RENDERER=opengl" TIMEOUT 150)
+    if(ROBOT3D_WITH_VTK)
+        add_dependencies(robot3d_workpiece_rendering_tests robot3d_vtk_runtime)
+    endif()
+    if(ROBOT3D_WITH_OCCT)
+        add_dependencies(robot3d_workpiece_rendering_tests robot3d_occt_runtime)
+    endif()
+endif()
+
+if(ROBOT3D_BUILD_TESTS)
+    add_executable(robot3d_workpiece_loader_tests tests/WorkpieceFileLoaderTests.cpp)
+    target_link_libraries(robot3d_workpiece_loader_tests PRIVATE robot3d_workpiece_io)
+    robot3d_configure_target(robot3d_workpiece_loader_tests)
+    set_target_properties(robot3d_workpiece_loader_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    add_dependencies(robot3d_workpiece_loader_tests robot3d_assets)
+    add_test(NAME robot3d_workpiece_loader COMMAND robot3d_workpiece_loader_tests "${CMAKE_BINARY_DIR}/workpiece-loader-validation")
+    set_tests_properties(robot3d_workpiece_loader PROPERTIES ENVIRONMENT "PATH=${ROBOT3D_QT_ROOT}/bin\;$ENV{PATH}" TIMEOUT 180)
+    if(ROBOT3D_WITH_OCCT)
+        target_compile_definitions(robot3d_workpiece_loader_tests PRIVATE ROBOT3D_WITH_OCCT)
+        target_include_directories(robot3d_workpiece_loader_tests PRIVATE "${OpenCASCADE_INCLUDE_DIR}")
+        target_link_libraries(robot3d_workpiece_loader_tests PRIVATE TKPrim TKDESTEP TKDEIGES TKMesh TKXCAF TKernel TKMath TKBRep TKG3d TKG2d TKTopAlgo TKCDF TKLCAF TKCAF)
+        add_dependencies(robot3d_workpiece_loader_tests robot3d_occt_runtime)
+    endif()
+endif()
+
+if(ROBOT3D_BUILD_TESTS)
+    add_executable(robot3d_workpiece_benchmark EXCLUDE_FROM_ALL tests/WorkpieceBenchmark.cpp)
+    target_link_libraries(robot3d_workpiece_benchmark PRIVATE robot3d_workpiece_io)
+    if(WIN32)
+        target_link_libraries(robot3d_workpiece_benchmark PRIVATE Psapi)
+    endif()
+    robot3d_configure_target(robot3d_workpiece_benchmark)
+    set_target_properties(robot3d_workpiece_benchmark PROPERTIES AUTOMOC OFF RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    add_dependencies(robot3d_workpiece_benchmark robot3d_assets)
+    if(ROBOT3D_WITH_OCCT)
+        add_dependencies(robot3d_workpiece_benchmark robot3d_occt_runtime)
+    endif()
+endif()

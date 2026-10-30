@@ -6,6 +6,8 @@
 #include <memory>
 #include "robot3d/presentation/IRobot3dView.h"
 class RobotViewport;
+class WorkpiecePanel;
+class QCloseEvent;
 class QSlider;
 class QCheckBox;
 #ifdef ROBOT3D_WITH_VTK
@@ -29,6 +31,8 @@ public:
     void submitScene(const robot3d::scene::RobotSceneSnapshot &scene) override;
     void showError(const std::string &error) override;
     void appendLog(const std::string &message) override;
+protected:
+    void closeEvent(QCloseEvent *event) override;
 private slots:
     void OnRobotTypeChanged(int index);
     void OnJointSliderChanged();
@@ -47,6 +51,7 @@ private:
     std::unique_ptr<robot3d::composition::Robot3dComposition> composition_;
     robot3d::presentation::Robot3dDisplayModel model_;
     RobotViewport *m_viewport = nullptr;
+    WorkpiecePanel *workpiecePanel_ = nullptr;
     QComboBox *m_backendCb = nullptr;
     QComboBox *m_robotTypeCb = nullptr, *m_coordSysSelectCb = nullptr;
     QSlider *m_jointSlider[6] = {};

@@ -95,7 +95,7 @@ Run/F5 的工作目录为 `build/vscode-qt5.9.9-msvc2015_64-vtk`，包含部署�
 
 ## 回归验证
 
-默认脚本启用 VTK 并构建四组测试，可用 CMake 选项 `ROBOT3D_BUILD_TESTS=OFF` 关闭。测试不依赖真实机器人。
+默认脚本启用 OCCT/VTK 并构建八组测试（关闭 VTK 为七组），可用 CMake 选项 `ROBOT3D_BUILD_TESTS=OFF` 关闭。测试不依赖真实机器人。
 
 ```powershell
 & 'C:\CMake\bin\ctest.exe' --test-dir build/vscode-qt5.9.9-msvc2015_64-vtk/Debug --output-on-failure
@@ -125,3 +125,13 @@ GUI 回归需要可用的 Windows 桌面 OpenGL 环境。帧和窗口截图位�
 先在 domain/application 定义状态与用例，再由 Presenter 协调，View 仅处理输入与显示；文件/设备依赖通过 ports 接口接入，GPU 对象由 Renderer 独占。
 
 `LegacyRobot3dViewAdapter`（原 `Robot3dControlWidget`）仅作为旧宿主 View 适配入口，取得 OpenGL 视口使用 `openGlViewport()`。新代码使用构造注入与 `IRobot3dView`；不再增加 `DemoDataHub::GetInstance()`、`CommDataController` 宏、对内部下拉框的跨组件访问或对 Geometry 数据成员的直接业务写入。
+
+## 工件模型导入与使用
+
+“工件”页提供 STEP/STP、IGES/IGS、STL、OBJ、PLY 的弹窗预览、单位/轴向/原点与组件确认、场景定位与显示管理、20 步撤销重做和 `.r3wp` 自包含场景包保存恢复。机械臂运动、坐标系和 OpenGL/VTK 后端切换均保留工件状态。
+
+操作与实测记录见 [工件模型功能使用与验证](docs/工件模型功能使用与验证.md)，需求基线见 [需求说明书](docs/工件模型导入预览与场景使用需求说明书.md)。表面选点、轨迹关联、碰撞、可达性及路径生成不在本期范围。
+
+默认查找固定 OCCT 7.9.1 SDK：本机由 `build/deps/occt-sdk-Debug.json`、`occt-sdk-Release.json` 指定。全新环境可用 `tools/build-occt.ps1` 从固定源码构建，或通过 `-OcctDir` 指定已验证的 SDK 配置；`-WithoutVTK` 可构建独立 OpenGL。`-WithoutOCCT` 仅供不含 CAD 的开发，不是完整功能版本。
+
+工件测试包括 `robot3d_workpiece`、`robot3d_workpiece_loader`、`robot3d_workpiece_gui`、`robot3d_workpiece_rendering`。可选 `robot3d_workpiece_benchmark` 生成 CPU/内存基准；`tools/stage-workpiece-release.py <buildDir> <newBuildOutputDir>` 生成含来源清单的受控便携验证包，不覆盖已有输出。Debug 与 Release 运行依赖必须匹配，Debug CRT 不随 Release 包分发。

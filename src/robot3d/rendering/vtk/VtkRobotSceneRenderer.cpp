@@ -27,6 +27,10 @@
 #include <algorithm>
 #include <limits>
 #include <vector>
+#include <map>
+#include <set>
+#include <stdexcept>
+#include "robot3d/rendering/WorkpieceSceneMath.h"
 
 namespace robot3d
 {
@@ -179,8 +183,54 @@ struct Decoration
 }
 
 /** @brief 保存 VTK 机器人 Actor、场景快照及从快照计算的变换缓存。 */
+
+namespace
+{
+struct WorkpiecePart
+{
+    Poly poly;
+    domain::Matrix4d transform;
+};
+struct WorkpieceAssetData
+{
+    domain::WorkpieceAssetPtr asset;
+    std::vector<WorkpiecePart> parts;
+};
+Poly workpiecePoly(const domain::WorkpieceMesh &mesh)
+{
+    vtkNew<vtkPoints> points;points->SetDataTypeToDouble();
+    vtkNew<vtkCellArray> cells;
+    vtkNew<vtkFloatArray> normals;normals->SetNumberOfComponents(3);
+    vtkNew<vtkUnsignedCharArray> colors;colors->SetNumberOfComponents(3);colors->SetName("WorkpieceRGB");
+    for(const auto &v:mesh.vertices)
+    {
+        points->InsertNextPoint(v.position.x*kMillimetersToModelUnits,v.position.y*kMillimetersToModelUnits,v.position.z*kMillimetersToModelUnits);
+        normals->InsertNextTuple3(v.normal.x,v.normal.y,v.normal.z);
+        colors->InsertNextTuple3(qBound(0,int(v.color[0]*255),255),qBound(0,int(v.color[1]*255),255),qBound(0,int(v.color[2]*255),255));
+    }
+    for(std::size_t n=0;n+2<mesh.indices.size();n+=3)
+    {
+        vtkIdType ids[3]={vtkIdType(mesh.indices[n]),vtkIdType(mesh.indices[n+1]),vtkIdType(mesh.indices[n+2])};
+        cells->InsertNextCell(3,ids);
+    }
+    Poly poly=Poly::New();poly->SetPoints(points);poly->SetPolys(cells);
+    poly->GetPointData()->SetNormals(normals);poly->GetPointData()->SetScalars(colors);return poly;
+}
+struct WorkpieceActorData
+{
+    Actor actor;
+    std::string instanceId;
+    domain::Matrix4d component;
+    QMatrix4x4 local;
+    int axis=-1;
+};
+}
+
 struct VtkRobotSceneRenderer::Implementation
 {
+    std::map<const domain::WorkpieceAsset*,std::shared_ptr<WorkpieceAssetData>> workpieceCache;
+    std::vector<WorkpieceActorData> workpieces;
+    std::vector<std::pair<std::string,const domain::WorkpieceAsset*>> workpieceSignature;
     vtkRenderer *renderer;                       ///< 外部视口持有的渲染器；本实现仅向其添加或移除 Actor。
     domain::RobotConfigurationPtr configuration; ///< 最近成功加载模型所使用的机器人配置；空表示尚无模型。
     scene::RobotSceneSnapshot scene;             ///< 最近一次 apply 接收的场景快照，供相机更新时读取显示选项。
@@ -199,6 +249,7 @@ struct VtkRobotSceneRenderer::Implementation
     }
     ~Implementation()
     {
+        for(auto &d:workpieces)renderer->RemoveActor(d.actor);
         for (auto &a : robot)
             renderer->RemoveActor(a);
         for (auto &a : target)
@@ -271,10 +322,95 @@ bool VtkRobotSceneRenderer::prepareModel(domain::RobotConfigurationPtr c, QStrin
         impl_->renderer->AddActor(a);
     return true;
 }
+
+bool VtkRobotSceneRenderer::prepareWorkpieces(const scene::RobotSceneSnapshot &s,QString &error)
+{
+    std::map<const domain::WorkpieceAsset*,std::shared_ptr<WorkpieceAssetData>> candidates;
+    try
+    {
+        for(const auto &i:s.workpieces)
+        {
+            if(!i.asset||impl_->workpieceCache.count(i.asset.get())||candidates.count(i.asset.get()))continue;
+            const auto valid=domain::validateWorkpieceAsset(*i.asset);
+            if(!valid.ok){error=QString::fromStdString(valid.error);return false;}
+            std::shared_ptr<WorkpieceAssetData> a(new WorkpieceAssetData);a->asset=i.asset;
+            for(const auto &c:i.asset->components)if(c.selected)
+                for(const auto &m:c.meshes)if(!m.indices.empty())
+                {
+                    WorkpiecePart p;p.poly=workpiecePoly(m);p.transform=c.transform;a->parts.push_back(p);
+                }
+            candidates[i.asset.get()]=a;
+        }
+        auto preparedCache=impl_->workpieceCache;
+        preparedCache.insert(candidates.begin(),candidates.end());
+        impl_->workpieceCache.swap(preparedCache);return true;
+    }
+    catch(const std::exception &e){error=QString::fromUtf8(e.what());return false;}
+}
+QString VtkRobotSceneRenderer::pickWorkpiece(const CameraState &camera,const QSize &size,const QPointF &point) const
+{
+    return QString::fromStdString(workpieceqt::pick(impl_->scene,camera,
+        workpieceqt::sceneProjection(impl_->scene,camera,double(size.width())/std::max(1,size.height()),impl_->eye,impl_->focus),
+        workpieceqt::view(impl_->scene,camera,impl_->eye,impl_->focus),size,point));
+}
+
 void VtkRobotSceneRenderer::apply(const scene::RobotSceneSnapshot &s)
 {
     auto &p = *impl_;
+    QString error;
+    if(!prepareWorkpieces(s,error))throw std::runtime_error(error.toStdString());
     p.scene = s;
+
+    std::vector<std::pair<std::string,const domain::WorkpieceAsset*>> signature;
+    for(const auto &i:s.workpieces)if(i.asset)signature.push_back(std::make_pair(i.id,i.asset.get()));
+    if(signature!=p.workpieceSignature)
+    {
+        std::vector<WorkpieceActorData> prepared;
+        for(const auto &i:s.workpieces)
+        {
+            if(!i.asset)continue;
+            const auto cache=p.workpieceCache.find(i.asset.get());if(cache==p.workpieceCache.end())continue;
+            for(const auto &part:cache->second->parts)
+            {
+                WorkpieceActorData d;d.actor=actorFor(part.poly,blue,true);d.instanceId=i.id;d.component=part.transform;
+                prepared.push_back(d);
+            }
+            for(int k=0;k<3;++k)
+            {
+                QVector3D end;end[k]=float(100*kMillimetersToModelUnits);
+                WorkpieceActorData d;d.actor=actorFor(line({QVector3D(),end}),axisColor(k));
+                d.actor->GetProperty()->SetLineWidth(3);d.instanceId=i.id;d.axis=k;prepared.push_back(d);
+            }
+        }
+        for(auto &d:p.workpieces)p.renderer->RemoveActor(d.actor);
+        p.workpieces.swap(prepared);p.workpieceSignature=signature;
+        for(auto &d:p.workpieces)p.renderer->AddActor(d.actor);
+    }
+    std::set<const domain::WorkpieceAsset*> retained;
+    for(const auto &i:s.workpieces)if(i.asset)retained.insert(i.asset.get());
+    for(auto it=p.workpieceCache.begin();it!=p.workpieceCache.end();)if(!retained.count(it->first))it=p.workpieceCache.erase(it);else ++it;
+    for(auto &d:p.workpieces)
+    {
+        const auto found=std::find_if(s.workpieces.begin(),s.workpieces.end(),[&](const domain::WorkpieceInstance &i){return i.id==d.instanceId;});
+        if(found==s.workpieces.end()){d.actor->SetVisibility(false);continue;}
+        const auto &i=*found;
+        d.local=workpieceqt::matrix(domain::multiply(workpieceqt::baseMatrix(s,i),d.component),true);
+        d.actor->SetVisibility(i.visible&&(d.axis<0||i.showAxes));
+        if(d.axis>=0)continue;
+        const bool selected=i.id==s.selectedWorkpieceId;
+        auto *mapper=vtkPolyDataMapper::SafeDownCast(d.actor->GetMapper());
+        mapper->SetScalarVisibility(!i.colorOverride);mapper->SetColorModeToDirectScalars();
+        d.actor->GetProperty()->SetColor(i.color[0],i.color[1],i.color[2]);
+        d.actor->GetProperty()->SetOpacity(qBound(0.0,i.opacity,1.0));
+        d.actor->GetProperty()->SetLineWidth(selected?2:1);
+        d.actor->GetProperty()->SetEdgeColor(selected?1.0:0.18,selected?0.5:0.2,selected?0.0:0.23);
+        d.actor->GetProperty()->SetBackfaceCulling(false);
+        if(i.displayMode==domain::WorkpieceDisplayMode::Wireframe)
+        {d.actor->GetProperty()->SetRepresentationToWireframe();d.actor->GetProperty()->EdgeVisibilityOff();}
+        else
+        {d.actor->GetProperty()->SetRepresentationToSurface();d.actor->GetProperty()->SetEdgeVisibility(selected||i.displayMode==domain::WorkpieceDisplayMode::SolidEdges);}
+    }
+
     if (!p.configuration)
         return;
     p.links = vtkmath::linkMatrices(*p.configuration, s.state.joints);
@@ -407,7 +543,8 @@ void VtkRobotSceneRenderer::updateCamera(const CameraState &camera)
     auto &p = *impl_;
     if (!p.configuration)
         return;
-    const auto root = vtkmath::sceneMatrix(p.scene, camera);
+    const auto root = workpieceqt::root(p.scene, camera);
+    for(auto &d:p.workpieces)matrix(d.actor,root*d.local);
     for (std::size_t i = 0; i < p.robot.size(); ++i)
     {
         const int link = int(qMin(i, std::size_t(6)));
@@ -419,11 +556,22 @@ void VtkRobotSceneRenderer::updateCamera(const CameraState &camera)
     for (auto &d : p.decorations)
         matrix(d.actor, root * d.local);
     auto *c = p.renderer->GetActiveCamera();
-    c->SetPosition(p.eye.x(), p.eye.y(), p.eye.z());
-    c->SetFocalPoint(p.focus.x(), p.focus.y(), p.focus.z());
-    c->SetViewUp(0, 0, 1);
-    c->SetViewAngle(45);
-    c->SetClippingRange(30, 400);
+    if(camera.focusOverride)
+    {
+        const auto focus=workpieceqt::coordinate(p.scene).inverted().map(camera.focusPoint);
+        c->SetPosition(focus.x()+camera.viewDistance,focus.y(),focus.z());
+        c->SetFocalPoint(focus.x(),focus.y(),focus.z());
+        const double radius=std::max(0.01,camera.sceneRadius*std::max(1.0,camera.scale));
+        c->SetClippingRange(std::max(0.001,camera.viewDistance-radius*2.5),std::max(camera.viewDistance+radius*4.0,camera.viewDistance+1.0));
+    }
+    else
+    {
+        c->SetPosition(p.eye.x(),p.eye.y(),p.eye.z());
+        c->SetFocalPoint(p.focus.x(),p.focus.y(),p.focus.z());
+        const auto range=workpieceqt::clipRange(p.scene,camera,p.eye,p.focus);
+        c->SetClippingRange(range.first,range.second);
+    }
+    c->SetViewUp(0,0,1);c->SetViewAngle(45);
 }
 QMatrix4x4 VtkRobotSceneRenderer::coordinateMatrix() const
 {

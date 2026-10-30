@@ -15,6 +15,9 @@ public:
     void showState(const robot3d::presentation::Robot3dDisplayModel &model);
     void submitScene(const robot3d::scene::RobotSceneSnapshot &scene);
     QImage capture();
+    bool prepareWorkpieces(const robot3d::scene::RobotSceneSnapshot &scene, std::string &error);
+    void focusWorkpiece(const QString &id);
+    void fitAllWorkpieces();
     QString backend() const
     {
         return active_;
@@ -26,6 +29,7 @@ public:
     bool requestBackend(const QString &name);
     static bool vtkAvailable();
 signals:
+    void workpieceSelected(const QString &id);
     void rendererReady();
     void renderFailed(const QString &error);
     void framePresented(qulonglong revision);

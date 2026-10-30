@@ -1,5 +1,7 @@
 #pragma once
 #include <memory>
+#include <QSize>
+#include <QPointF>
 #include <vector>
 #include <QOpenGLFunctions>
 #include "robot3d/scene/RobotSceneSnapshot.h"
@@ -20,12 +22,16 @@ public:
     OpenGlRobotSceneRenderer();
     ~OpenGlRobotSceneRenderer();
     bool prepareModel(domain::RobotConfigurationPtr config, QString &error);
+    bool prepareWorkpieces(const scene::RobotSceneSnapshot &scene, QString &error);
+    QString pickWorkpiece(const CameraState &camera, const QSize &size, const QPointF &point) const;
     void apply(const scene::RobotSceneSnapshot &scene);
     void draw(const QMatrix4x4 &projection, const CameraState &camera);
     QVector3D rotationCenter() const;
     QMatrix4x4 coordinateMatrix() const;
 
 private:
+    struct WorkpieceResources;
+    std::unique_ptr<WorkpieceResources> workpieceResources_;
     std::unique_ptr<OpenGlRobotGeometry> robot_, target_;
     std::unique_ptr<OpenGlSphereGeometry> tcp_, waypoints_;
     std::unique_ptr<OpenGlLineGeometry> trajectory_;

@@ -27,6 +27,9 @@ public:
     void submitScene(const robot3d::scene::RobotSceneSnapshot &scene);
     bool isRendererReady() const;
     QImage capture();
+    bool prepareWorkpieces(const robot3d::scene::RobotSceneSnapshot &scene, std::string &error);
+    void focusWorkpiece(const QString &id);
+    void fitAllWorkpieces();
     robot3d::rendering::CameraState cameraState() const
     {
         return camera_;
@@ -42,6 +45,7 @@ public:
     void setCameraState(const robot3d::rendering::CameraState &state);
     const robot3d::rendering::VtkRobotSceneRenderer *renderer() const;
 signals:
+    void workpieceSelected(const QString &id);
     void rendererReady();
     void renderFailed(const QString &error);
     void framePresented(qulonglong revision);
@@ -75,6 +79,8 @@ private:
     robot3d::scene::RobotSceneSnapshot scene_;
     robot3d::scene::RobotDisplayOptions options_;
     QVector2D curPos;
+    QPointF workpiecePressPoint_;
+    bool workpieceDragged_ = false;
     bool dirty_ = false, dragging_ = false, install_ = false, scheduled_ = false, rendering_ = false;
     int rotateTranslateStatus = 0;
     QSlider *zoomSlider = nullptr;

@@ -3,6 +3,7 @@
 #include <QSignalBlocker>
 #include <QTimer>
 #include <stdexcept>
+#include "robot3d/rendering/WorkpieceSceneMath.h"
 OpenGlRobotViewport::OpenGlRobotViewport(QWidget *parent) : QOpenGLWidget(parent)
 {
     setObjectName("openGlRobotViewport");
@@ -59,6 +60,26 @@ bool OpenGlRobotViewport::prepareModel(robot3d::domain::RobotConfigurationPtr c,
     error = message.toStdString();
     return ok;
 }
+
+bool OpenGlRobotViewport::prepareWorkpieces(const robot3d::scene::RobotSceneSnapshot &s,std::string &error)
+{
+    if(!renderer_||!isValid()){error="OpenGL viewport is not ready";return false;}
+    makeCurrent();QString message;bool ok=false;
+    try {ok=renderer_->prepareWorkpieces(s,message);}
+    catch(const std::exception &e){message=QString::fromUtf8(e.what());}
+    doneCurrent();error=message.toStdString();return ok;
+}
+void OpenGlRobotViewport::focusWorkpiece(const QString &id)
+{
+    if(robot3d::rendering::workpieceqt::focus(scene_,id.toStdString(),false,double(width())/qMax(1,height()),camera_))
+    {QSignalBlocker block(zoomSlider);zoomSlider->setValue(40);update();}
+}
+void OpenGlRobotViewport::fitAllWorkpieces()
+{
+    if(robot3d::rendering::workpieceqt::focus(scene_,std::string(),true,double(width())/qMax(1,height()),camera_))
+    {QSignalBlocker block(zoomSlider);zoomSlider->setValue(40);update();}
+}
+
 void OpenGlRobotViewport::showState(const robot3d::presentation::Robot3dDisplayModel &m)
 {
     options_ = m.options;
@@ -121,11 +142,13 @@ void OpenGlRobotViewport::paintGL()
         return;
     if (dirty_)
     {
-        renderer_->apply(scene_);
+        try {renderer_->apply(scene_);}
+        catch(const std::exception &e){dirty_=false;emit renderFailed(QString::fromUtf8(e.what()));return;}
         camera_.coordinateMatrix = renderer_->coordinateMatrix();
         camera_.rotationCenter = install_ ? QVector3D() : renderer_->rotationCenter();
         dirty_ = false;
     }
+    projection=robot3d::rendering::workpieceqt::projection(camera_,double(width())/qMax(1,height()));
     renderer_->draw(projection, camera_);
     if (scene_.state.configuration)
         emit framePresented(scene_.state.revision);
@@ -133,16 +156,20 @@ void OpenGlRobotViewport::paintGL()
 void OpenGlRobotViewport::mousePressEvent(QMouseEvent *e)
 {
     curPos = QVector2D(e->localPos());
+    workpiecePressPoint_=e->localPos();workpieceDragged_=false;
     dragging_ = true;
 }
-void OpenGlRobotViewport::mouseReleaseEvent(QMouseEvent *)
+void OpenGlRobotViewport::mouseReleaseEvent(QMouseEvent *event)
 {
+    if(dragging_&&!workpieceDragged_&&event->button()==Qt::LeftButton&&renderer_)
+        emit workpieceSelected(renderer_->pickWorkpiece(camera_,size(),event->localPos()));
     dragging_ = false;
 }
 void OpenGlRobotViewport::mouseMoveEvent(QMouseEvent *e)
 {
     if (!dragging_)
         return;
+    if(QVector2D(e->localPos()-workpiecePressPoint_).length()>3)workpieceDragged_=true;
     const auto p = QVector2D(e->localPos());
     const auto diff = p - curPos;
     curPos = p;
@@ -169,6 +196,7 @@ void OpenGlRobotViewport::zoomChange_slot()
 }
 void OpenGlRobotViewport::Recovery3D_slot()
 {
+    camera_.focusOverride=false;
     camera_.rotation = QQuaternion();
     camera_.translation = install_ ? QVector3D(0, 0, 20) : QVector3D();
     camera_.scale = 1;

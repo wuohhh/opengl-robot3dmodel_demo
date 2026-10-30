@@ -1,6 +1,10 @@
 #include "robot3d/shell/Robot3dDemoView.h"
 #include "robot3d/presentation/Robot3dPresenter.h"
 #include "robot3d/shell/RobotViewport.h"
+#include "robot3d/shell/WorkpiecePanel.h"
+#include <QTabWidget>
+#include <QScrollArea>
+#include <QCloseEvent>
 #include "robot3d/composition/Robot3dComposition.h"
 #include <QApplication>
 #include <QDateTime>
@@ -174,7 +178,9 @@ void Robot3dDemoView::showState(const robot3d::presentation::Robot3dDisplayModel
 }
 void Robot3dDemoView::submitScene(const robot3d::scene::RobotSceneSnapshot &s)
 {
-    m_viewport->submitScene(s);
+    auto scene = s;
+    if (workpiecePanel_) workpiecePanel_->decorateScene(scene);
+    m_viewport->submitScene(scene);
 }
 void Robot3dDemoView::OnJointSliderChanged()
 {
@@ -425,5 +431,24 @@ QWidget *Robot3dDemoView::BuildControlPanel()
     layout->addWidget(dispBox);
 
     layout->addStretch(1);
-    return panel;
+    auto *tabs = new QTabWidget(this);
+    tabs->setObjectName("sceneControlTabs");
+    auto *robotScroll = new QScrollArea(tabs);
+    robotScroll->setWidgetResizable(true);
+    robotScroll->setFrameShape(QFrame::NoFrame);
+    robotScroll->setWidget(panel);
+    tabs->addTab(robotScroll, QString::fromUtf8("机械臂"));
+    workpiecePanel_ = new WorkpiecePanel(m_viewport, tabs);
+    tabs->addTab(workpiecePanel_, QString::fromUtf8("工件"));
+    connect(workpiecePanel_, &WorkpiecePanel::sceneChanged, this, [this] {
+        m_viewport->submitScene(workpiecePanel_->currentScene());
+    });
+    connect(workpiecePanel_, &WorkpiecePanel::closeReady, this, [this] { close(); });
+    return tabs;
+}
+
+void Robot3dDemoView::closeEvent(QCloseEvent *event)
+{
+    if (workpiecePanel_ && !workpiecePanel_->mayClose()) { event->ignore(); return; }
+    QWidget::closeEvent(event);
 }

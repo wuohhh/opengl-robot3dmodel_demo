@@ -1,0 +1,559 @@
+{
+  "schema": "robot3d-occt-dependency-license-materials-1",
+  "recordedDate": "2026-10-30",
+  "purpose": "Actual runtime inventory and source license materials; no completed legal review is asserted",
+  "legalApproval": false,
+  "upstreamArchive": {
+    "url": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+    "officialAssetId": 257073494,
+    "size": 193789890,
+    "verification": "Selected entries verified by ZIP CRC32 and recorded SHA256; full archive SHA256 not asserted"
+  },
+  "licenseMaterials": [
+    {
+      "file": "TBB-LICENSE.md",
+      "source": "OCCT official thirdparty asset",
+      "url": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "officialAssetId": 257073494,
+      "archiveMember": "3rdparty-vc14-64/tbb-2021.13.0-x64/LICENSE.txt",
+      "originalSha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "deliveredSha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "size": 11357,
+      "zipCrc32": "7b5d04bc"
+    },
+    {
+      "file": "TBB-package-README.md",
+      "source": "OCCT official thirdparty asset",
+      "url": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "officialAssetId": 257073494,
+      "archiveMember": "3rdparty-vc14-64/tbb-2021.13.0-x64/share/doc/TBB/README.md",
+      "originalSha256": "b3979d3c2a8dca63a4750497cd35bc53a03e52524ea55caa1df7c646bf529a86",
+      "deliveredSha256": "b3979d3c2a8dca63a4750497cd35bc53a03e52524ea55caa1df7c646bf529a86",
+      "size": 3046,
+      "zipCrc32": "7a6f7459"
+    },
+    {
+      "file": "jemalloc-COPYRIGHT.md",
+      "source": "OCCT official thirdparty asset",
+      "url": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "officialAssetId": 257073494,
+      "archiveMember": "3rdparty-vc14-64/jemalloc-vc14-64/share/jemalloc/copyright",
+      "originalSha256": "e1812a56f610d7d2fb42527fef8f7857927bc732a3476e8e1999c1f677f69518",
+      "deliveredSha256": "e1812a56f610d7d2fb42527fef8f7857927bc732a3476e8e1999c1f677f69518",
+      "size": 1736,
+      "zipCrc32": "49ebd237"
+    },
+    {
+      "file": "jemalloc-BUILD-INFO.md",
+      "source": "OCCT official thirdparty asset",
+      "url": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "officialAssetId": 257073494,
+      "archiveMember": "3rdparty-vc14-64/jemalloc-vc14-64/BUILD_INFO",
+      "originalSha256": "5e7f821ab4eb804deb535baa7b41edca682d0303cf21a91908c98d5c9a7dcf4d",
+      "deliveredSha256": "5e7f821ab4eb804deb535baa7b41edca682d0303cf21a91908c98d5c9a7dcf4d",
+      "size": 46,
+      "zipCrc32": "862141d0"
+    },
+    {
+      "file": "jemalloc-CONTROL.md",
+      "source": "OCCT official thirdparty asset",
+      "url": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "officialAssetId": 257073494,
+      "archiveMember": "3rdparty-vc14-64/jemalloc-vc14-64/CONTROL",
+      "originalSha256": "053ff5624f6f592ac43fe4f785acd3c3dba546e9b304eb8a249962fa10e5c62c",
+      "deliveredSha256": "053ff5624f6f592ac43fe4f785acd3c3dba546e9b304eb8a249962fa10e5c62c",
+      "size": 310,
+      "zipCrc32": "8ee63555"
+    },
+    {
+      "file": "FreeType-LICENSE.md",
+      "source": "OCCT official thirdparty asset",
+      "url": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "officialAssetId": 257073494,
+      "archiveMember": "3rdparty-vc14-64/freetype-2.13.3-x64/LICENSE.TXT",
+      "originalSha256": "2e3bbb7d7c5c396368dd0853a790ec29ce5b8647163dde42a0493fb0d6556b2b",
+      "deliveredSha256": "2e3bbb7d7c5c396368dd0853a790ec29ce5b8647163dde42a0493fb0d6556b2b",
+      "size": 2074,
+      "zipCrc32": "ef761206"
+    },
+    {
+      "file": "FreeImage-FIPL.md",
+      "source": "OCCT official thirdparty asset",
+      "url": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "officialAssetId": 257073494,
+      "archiveMember": "3rdparty-vc14-64/freeimage-3.18.0-x64/license-fi.txt",
+      "originalSha256": "0bb9a3123297c73ae6e19c70459fb0e58f313f67ca63176fd43f8e77668b8243",
+      "deliveredSha256": "0bb9a3123297c73ae6e19c70459fb0e58f313f67ca63176fd43f8e77668b8243",
+      "size": 17577,
+      "zipCrc32": "c513284a"
+    },
+    {
+      "file": "FreeImage-GPL-2.md",
+      "source": "OCCT official thirdparty asset",
+      "url": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "officialAssetId": 257073494,
+      "archiveMember": "3rdparty-vc14-64/freeimage-3.18.0-x64/license-gplv2.txt",
+      "originalSha256": "d51615a1a47f1ddbb027920d60d3fc30a00e1284c795a47857883e641349fadf",
+      "deliveredSha256": "d51615a1a47f1ddbb027920d60d3fc30a00e1284c795a47857883e641349fadf",
+      "size": 17878,
+      "zipCrc32": "b1f1abfc"
+    },
+    {
+      "file": "FreeImage-GPL-3.md",
+      "source": "OCCT official thirdparty asset",
+      "url": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "officialAssetId": 257073494,
+      "archiveMember": "3rdparty-vc14-64/freeimage-3.18.0-x64/license-gplv3.txt",
+      "originalSha256": "084be110e3e8757d8e6945cda1fbc7e5073bbe688dc19b92c0d8440155d8e282",
+      "deliveredSha256": "084be110e3e8757d8e6945cda1fbc7e5073bbe688dc19b92c0d8440155d8e282",
+      "size": 34801,
+      "zipCrc32": "befe1a09"
+    },
+    {
+      "file": "OpenVR-LICENSE.md",
+      "url": "https://raw.githubusercontent.com/ValveSoftware/openvr/v1.14.15/LICENSE",
+      "sha256": "f56ff606104d4ef18e617921a75c73ad73b5a1a1d70c69590c29de16919e04ad",
+      "size": 1488,
+      "ok": true,
+      "originalSha256": "f56ff606104d4ef18e617921a75c73ad73b5a1a1d70c69590c29de16919e04ad",
+      "deliveredSha256": "f56ff606104d4ef18e617921a75c73ad73b5a1a1d70c69590c29de16919e04ad",
+      "source": "Matching upstream version tag"
+    },
+    {
+      "file": "FreeType-FTL.md",
+      "url": "https://raw.githubusercontent.com/freetype/freetype/VER-2-13-3/docs/FTL.TXT",
+      "sha256": "08c135755dd589039470f1fdbb400daaabaaa50d0b366d19cebff4d22986baa1",
+      "size": 6743,
+      "ok": true,
+      "originalSha256": "08c135755dd589039470f1fdbb400daaabaaa50d0b366d19cebff4d22986baa1",
+      "deliveredSha256": "08c135755dd589039470f1fdbb400daaabaaa50d0b366d19cebff4d22986baa1",
+      "source": "Matching upstream version tag"
+    },
+    {
+      "file": "FFmpeg-LGPL-2.1.md",
+      "url": "https://raw.githubusercontent.com/FFmpeg/FFmpeg/n3.3.4/COPYING.LGPLv2.1",
+      "sha256": "b634ab5640e258563c536e658cad87080553df6f34f62269a21d554844e58bfe",
+      "size": 26526,
+      "ok": true,
+      "originalSha256": "b634ab5640e258563c536e658cad87080553df6f34f62269a21d554844e58bfe",
+      "deliveredSha256": "b634ab5640e258563c536e658cad87080553df6f34f62269a21d554844e58bfe",
+      "source": "Matching upstream version tag"
+    },
+    {
+      "file": "TBB-NOTICE.md",
+      "url": "https://api.github.com/repos/uxlfoundation/oneTBB/contents/third-party-programs.txt?ref=v2021.13.0",
+      "upstreamRawUrl": "https://raw.githubusercontent.com/uxlfoundation/oneTBB/v2021.13.0/third-party-programs.txt",
+      "gitBlobSha": "c088429c2eb0b35fe798686c7bd172e99f30b22f",
+      "sha256": "1634857eb058dce5278c57a832b8974190785145f4be9acdbdb511f3a0c4091c",
+      "size": 11631,
+      "ok": true,
+      "originalSha256": "1634857eb058dce5278c57a832b8974190785145f4be9acdbdb511f3a0c4091c",
+      "deliveredSha256": "1634857eb058dce5278c57a832b8974190785145f4be9acdbdb511f3a0c4091c",
+      "source": "Matching upstream version tag"
+    },
+    {
+      "file": "FFmpeg-LICENSE.md",
+      "url": "https://api.github.com/repos/FFmpeg/FFmpeg/contents/LICENSE.md?ref=n3.3.4",
+      "upstreamRawUrl": "https://raw.githubusercontent.com/FFmpeg/FFmpeg/n3.3.4/LICENSE.md",
+      "gitBlobSha": "ba65b059c5ba0525ed91594c17fbb73839b6868e",
+      "sha256": "73d99bc83313fff665b426d6672b4e0479102bc402fe22314ac9ce94a38aa5ff",
+      "size": 4368,
+      "ok": true,
+      "originalSha256": "73d99bc83313fff665b426d6672b4e0479102bc402fe22314ac9ce94a38aa5ff",
+      "deliveredSha256": "73d99bc83313fff665b426d6672b4e0479102bc402fe22314ac9ce94a38aa5ff",
+      "source": "Matching upstream version tag"
+    }
+  ],
+  "runtimeDlls": [
+    {
+      "name": "FreeImage.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/freeimage-3.18.0-x64/bin/FreeImage.dll",
+      "sha256": "4594bd0538f7f6b05148b00996ff36ddfedef8d66910e931503dcfebf8efe1db",
+      "configuration": "Release",
+      "size": 6942208,
+      "actualSha256": "4594bd0538f7f6b05148b00996ff36ddfedef8d66910e931503dcfebf8efe1db",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "freetype.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/freetype-2.13.3-x64/bin/freetype.dll",
+      "sha256": "637621e4ae51b496b8a86f9b053050d5af2ba999ea0680bbfe3d5df91f976c75",
+      "configuration": "Release",
+      "size": 684032,
+      "actualSha256": "637621e4ae51b496b8a86f9b053050d5af2ba999ea0680bbfe3d5df91f976c75",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "avcodec-57.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/ffmpeg-3.3.4-64/bin/avcodec-57.dll",
+      "sha256": "4d7a6a2cff37c782ce1a3c74fa83ebbebcc43dfc774e3f497a406c84c1458c7e",
+      "configuration": "Release",
+      "size": 13399040,
+      "actualSha256": "4d7a6a2cff37c782ce1a3c74fa83ebbebcc43dfc774e3f497a406c84c1458c7e",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "avformat-57.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/ffmpeg-3.3.4-64/bin/avformat-57.dll",
+      "sha256": "297d3207dd0e6325dab7a080472a4fd2f743cfc53861615b4dc96b91227cd3af",
+      "configuration": "Release",
+      "size": 3361280,
+      "actualSha256": "297d3207dd0e6325dab7a080472a4fd2f743cfc53861615b4dc96b91227cd3af",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "swscale-4.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/ffmpeg-3.3.4-64/bin/swscale-4.dll",
+      "sha256": "67bcffb3ccdaebf2bbd3149542d92dd9430abfdff1d7b79b3a529af712926412",
+      "configuration": "Release",
+      "size": 1164288,
+      "actualSha256": "67bcffb3ccdaebf2bbd3149542d92dd9430abfdff1d7b79b3a529af712926412",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "avutil-55.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/ffmpeg-3.3.4-64/bin/avutil-55.dll",
+      "sha256": "be7c03ff47618916d16af446e2f7c00e48f2ff8934c6ace4c0d0e3d804732e8e",
+      "configuration": "Release",
+      "size": 1245184,
+      "actualSha256": "be7c03ff47618916d16af446e2f7c00e48f2ff8934c6ace4c0d0e3d804732e8e",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "openvr_api.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/openvr-1.14.15-64/bin/win64/openvr_api.dll",
+      "sha256": "71db78e77e577db6d0666c25437695d42ceafb9c7f8da94fbe765525b8e2f5f2",
+      "configuration": "Release",
+      "size": 819664,
+      "actualSha256": "71db78e77e577db6d0666c25437695d42ceafb9c7f8da94fbe765525b8e2f5f2",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "jemalloc.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/jemalloc-vc14-64/bin/jemalloc.dll",
+      "sha256": "ea0cfcf6a12bb3863961074547c958fd978aa3f800244cc4fe2847b127c4df5e",
+      "configuration": "Release",
+      "size": 498176,
+      "actualSha256": "ea0cfcf6a12bb3863961074547c958fd978aa3f800244cc4fe2847b127c4df5e",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "tbb12.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/tbb-2021.13.0-x64/bin/tbb12.dll",
+      "sha256": "887888a0c2ffe7f64718d4eea2a10ce41c68dec1a954db3a62646adeee66c0ad",
+      "configuration": "Release",
+      "size": 322048,
+      "actualSha256": "887888a0c2ffe7f64718d4eea2a10ce41c68dec1a954db3a62646adeee66c0ad",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "tbb12.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/tbb-2021.13.0-x64/bin/tbb12.dll",
+      "sha256": "887888a0c2ffe7f64718d4eea2a10ce41c68dec1a954db3a62646adeee66c0ad",
+      "configuration": "Debug",
+      "size": 322048,
+      "actualSha256": "887888a0c2ffe7f64718d4eea2a10ce41c68dec1a954db3a62646adeee66c0ad",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "jemalloc.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/jemalloc-vc14-64/debug/bin/jemalloc.dll",
+      "sha256": "6e57fd7c9562db5eef41e09c656c2a80b594c3956fe2e341244742367c0f242c",
+      "configuration": "Debug",
+      "size": 2403840,
+      "actualSha256": "6e57fd7c9562db5eef41e09c656c2a80b594c3956fe2e341244742367c0f242c",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "openvr_api.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/openvr-1.14.15-64/bin/win64/openvr_api.dll",
+      "sha256": "71db78e77e577db6d0666c25437695d42ceafb9c7f8da94fbe765525b8e2f5f2",
+      "configuration": "Debug",
+      "size": 819664,
+      "actualSha256": "71db78e77e577db6d0666c25437695d42ceafb9c7f8da94fbe765525b8e2f5f2",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "FreeImage.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/freeimage-3.18.0-x64/bin/FreeImage.dll",
+      "sha256": "4594bd0538f7f6b05148b00996ff36ddfedef8d66910e931503dcfebf8efe1db",
+      "configuration": "Debug",
+      "size": 6942208,
+      "actualSha256": "4594bd0538f7f6b05148b00996ff36ddfedef8d66910e931503dcfebf8efe1db",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "freetype.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/freetype-2.13.3-x64/bin/freetype.dll",
+      "sha256": "637621e4ae51b496b8a86f9b053050d5af2ba999ea0680bbfe3d5df91f976c75",
+      "configuration": "Debug",
+      "size": 684032,
+      "actualSha256": "637621e4ae51b496b8a86f9b053050d5af2ba999ea0680bbfe3d5df91f976c75",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "avcodec-57.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/ffmpeg-3.3.4-64/bin/avcodec-57.dll",
+      "sha256": "4d7a6a2cff37c782ce1a3c74fa83ebbebcc43dfc774e3f497a406c84c1458c7e",
+      "configuration": "Debug",
+      "size": 13399040,
+      "actualSha256": "4d7a6a2cff37c782ce1a3c74fa83ebbebcc43dfc774e3f497a406c84c1458c7e",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "avformat-57.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/ffmpeg-3.3.4-64/bin/avformat-57.dll",
+      "sha256": "297d3207dd0e6325dab7a080472a4fd2f743cfc53861615b4dc96b91227cd3af",
+      "configuration": "Debug",
+      "size": 3361280,
+      "actualSha256": "297d3207dd0e6325dab7a080472a4fd2f743cfc53861615b4dc96b91227cd3af",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "swscale-4.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/ffmpeg-3.3.4-64/bin/swscale-4.dll",
+      "sha256": "67bcffb3ccdaebf2bbd3149542d92dd9430abfdff1d7b79b3a529af712926412",
+      "configuration": "Debug",
+      "size": 1164288,
+      "actualSha256": "67bcffb3ccdaebf2bbd3149542d92dd9430abfdff1d7b79b3a529af712926412",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    },
+    {
+      "name": "avutil-55.dll",
+      "officialAssetId": 257073494,
+      "member": "3rdparty-vc14-64/ffmpeg-3.3.4-64/bin/avutil-55.dll",
+      "sha256": "be7c03ff47618916d16af446e2f7c00e48f2ff8934c6ace4c0d0e3d804732e8e",
+      "configuration": "Debug",
+      "size": 1245184,
+      "actualSha256": "be7c03ff47618916d16af446e2f7c00e48f2ff8934c6ace4c0d0e3d804732e8e",
+      "sourceUrl": "https://github.com/Open-Cascade-SAS/OCCT/releases/download/V7_9_1/3rdparty-vc14-64.zip",
+      "snapshotHashMatched": true
+    }
+  ],
+  "runtimeVersionProbes": {
+    "FreeImage_GetVersion": "3.18.0",
+    "FreeImage_GetCopyrightMessage": "This program uses FreeImage, a free, open source image library supporting all common bitmap formats. See http://freeimage.sourceforge.net for details",
+    "FreeType_version": "2.13.3",
+    "jemalloc_package_control_version": "5.3.0 (Port-Version 1)",
+    "jemalloc_runtime_je_mallctl_version": "0.0.0-0-g000000missing_version_try_git_fetch_tags"
+  },
+  "ffmpegRuntimeProbes": [
+    {
+      "file": "avcodec-57.dll",
+      "sha256": "4d7a6a2cff37c782ce1a3c74fa83ebbebcc43dfc774e3f497a406c84c1458c7e",
+      "license": "LGPL version 2.1 or later",
+      "configuration": "--enable-shared --disable-static --prefix=/d/build_ffmpeg/ffmpeg-3.3.4-64 --toolchain=msvc --arch=amd64 --disable-asm --disable-yasm --disable-swresample",
+      "versionPacked": 3758436,
+      "version": "57.89.100"
+    },
+    {
+      "file": "avformat-57.dll",
+      "sha256": "297d3207dd0e6325dab7a080472a4fd2f743cfc53861615b4dc96b91227cd3af",
+      "license": "LGPL version 2.1 or later",
+      "configuration": "--enable-shared --disable-static --prefix=/d/build_ffmpeg/ffmpeg-3.3.4-64 --toolchain=msvc --arch=amd64 --disable-asm --disable-yasm --disable-swresample",
+      "versionPacked": 3753828,
+      "version": "57.71.100"
+    },
+    {
+      "file": "avutil-55.dll",
+      "sha256": "be7c03ff47618916d16af446e2f7c00e48f2ff8934c6ace4c0d0e3d804732e8e",
+      "license": "LGPL version 2.1 or later",
+      "configuration": "--enable-shared --disable-static --prefix=/d/build_ffmpeg/ffmpeg-3.3.4-64 --toolchain=msvc --arch=amd64 --disable-asm --disable-yasm --disable-swresample",
+      "versionPacked": 3619428,
+      "version": "55.58.100"
+    },
+    {
+      "file": "swscale-4.dll",
+      "sha256": "67bcffb3ccdaebf2bbd3149542d92dd9430abfdff1d7b79b3a529af712926412",
+      "license": "LGPL version 2.1 or later",
+      "configuration": "--enable-shared --disable-static --prefix=/d/build_ffmpeg/ffmpeg-3.3.4-64 --toolchain=msvc --arch=amd64 --disable-asm --disable-yasm --disable-swresample",
+      "versionPacked": 263780,
+      "version": "4.6.100"
+    }
+  ],
+  "ffmpegGplEnableObserved": false,
+  "ffmpegNonfreeEnableObserved": false,
+  "debugCrtDevelopmentOnly": {
+    "purpose": "local-development-tests-only",
+    "redistributable": false,
+    "globalInstallationPerformed": false,
+    "payloadUrl": "https://download.visualstudio.microsoft.com/download/pr/45d3b8dd-bced-4b37-9974-142f748d710c/4aaf54db0bfc9435f7c3660e1a00237a4b556042bfeea64bde44c2e0194e6ee5/Microsoft.VC.14.44.17.14.CRT.Redist.X64.base.vsix",
+    "payloadSha256": "4aaf54db0bfc9435f7c3660e1a00237a4b556042bfeea64bde44c2e0194e6ee5",
+    "payloadHashMatched": true,
+    "catalogDeclaredPayloadSize": 3236248,
+    "actualPayloadSize": 3224191,
+    "payloadSizeMatched": false,
+    "discoveryCatalog": {
+      "url": "https://download.visualstudio.microsoft.com/download/pr/6bd63d7f-1818-4e03-a552-9feb11496c19/4cc372d79f02e331c999a926b833a49eb74b30357d30f41ba9cffa1dc0369379/VisualStudio.vsman",
+      "channelExpectedSha256": "4cc372d79f02e331c999a926b833a49eb74b30357d30f41ba9cffa1dc0369379",
+      "observedSha256": "963760b01f621ed4fa40d1cf97aeb042f7bc6e04e3176c13c38abb19d265f789",
+      "channelHashMatched": false,
+      "note": "Official HTTPS discovery only. Catalog pin did not match; payload SHA and Microsoft DLL signatures were independently required."
+    },
+    "files": [
+      {
+        "Path": "C:\\Users\\yuguilin\\Desktop\\gitlab\\allTestDemo\\robot3d_demo\\build\\deps\\msvc-debug-crt-14.44.35112\\msvcp140d.dll",
+        "Status": "Valid",
+        "Subject": "CN=Microsoft Windows Software Compatibility Publisher, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "Thumbprint": "EC5F0D7EE2327688384B4FDF5D7633553A0D055F",
+        "TimestampSubject": "CN=Microsoft Time-Stamp Service, OU=nShield TSS ESN:551A-05E0-D947, OU=Microsoft Ireland Operations Limited, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "FileVersion": "14.44.35211.0",
+        "name": "msvcp140d.dll",
+        "sha256": "342e5c13fd61f6130f61d85c00a7dfb10289ea7e89740f43efdabe4db16333a5",
+        "size": 922752,
+        "sourceMember": "Contents/VC/Redist/MSVC/14.44.35112/debug_nonredist/x64/Microsoft.VC143.DebugCRT/msvcp140d.dll",
+        "destination": "C:\\Users\\yuguilin\\Desktop\\gitlab\\allTestDemo\\robot3d_demo\\build\\deps\\occt-sdk-official-7.9.1\\occt_vc14-64\\win64\\vc14\\bind\\msvcp140d.dll"
+      },
+      {
+        "Path": "C:\\Users\\yuguilin\\Desktop\\gitlab\\allTestDemo\\robot3d_demo\\build\\deps\\msvc-debug-crt-14.44.35112\\vcruntime140_1d.dll",
+        "Status": "Valid",
+        "Subject": "CN=Microsoft Windows Software Compatibility Publisher, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "Thumbprint": "81915C173D7FFCBF49EAA8CF7594696B29A035E1",
+        "TimestampSubject": "CN=Microsoft Time-Stamp Service, OU=nShield TSS ESN:F002-05E0-D947, OU=Microsoft America Operations, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "FileVersion": "14.44.35211.0",
+        "name": "vcruntime140_1d.dll",
+        "sha256": "c734d0a16d683592286de2e05c1ebcc3e819f6edfd501d026ce25aee0a733eba",
+        "size": 65136,
+        "sourceMember": "Contents/VC/Redist/MSVC/14.44.35112/debug_nonredist/x64/Microsoft.VC143.DebugCRT/vcruntime140_1d.dll",
+        "destination": "C:\\Users\\yuguilin\\Desktop\\gitlab\\allTestDemo\\robot3d_demo\\build\\deps\\occt-sdk-official-7.9.1\\occt_vc14-64\\win64\\vc14\\bind\\vcruntime140_1d.dll"
+      },
+      {
+        "Path": "C:\\Users\\yuguilin\\Desktop\\gitlab\\allTestDemo\\robot3d_demo\\build\\deps\\msvc-debug-crt-14.44.35112\\vcruntime140d.dll",
+        "Status": "Valid",
+        "Subject": "CN=Microsoft Windows Software Compatibility Publisher, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "Thumbprint": "EC5F0D7EE2327688384B4FDF5D7633553A0D055F",
+        "TimestampSubject": "CN=Microsoft Time-Stamp Service, OU=nShield TSS ESN:401A-05E0-D947, OU=Microsoft Ireland Operations Limited, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "FileVersion": "14.44.35211.0",
+        "name": "vcruntime140d.dll",
+        "sha256": "098a800e8d227b2c683274789b93671a668d76fe0bb7817e4921ee473db4c17e",
+        "size": 196224,
+        "sourceMember": "Contents/VC/Redist/MSVC/14.44.35112/debug_nonredist/x64/Microsoft.VC143.DebugCRT/vcruntime140d.dll",
+        "destination": "C:\\Users\\yuguilin\\Desktop\\gitlab\\allTestDemo\\robot3d_demo\\build\\deps\\occt-sdk-official-7.9.1\\occt_vc14-64\\win64\\vc14\\bind\\vcruntime140d.dll"
+      }
+    ],
+    "documentation": "https://learn.microsoft.com/en-us/cpp/windows/preparing-a-test-machine-to-run-a-debug-executable?view=msvc-170"
+  },
+  "pendingReview": [
+    "Exact corresponding source and patch provenance for distributed binaries",
+    "License selection and attribution for FreeType and FreeImage",
+    "Static embedded codecs/components and their complete license inventory",
+    "LGPL source delivery/relinking/end-user-license obligations",
+    "Final redistributable package legal approval"
+  ],
+  "deliveredFiles": [
+    {
+      "file": "FFmpeg-build-configuration.md",
+      "size": 1655,
+      "sha256": "0623f89071f4efa1b4256c6db9edfc4ba02c048190dfc1ebf514dc14572acabf"
+    },
+    {
+      "file": "FFmpeg-LGPL-2.1.md",
+      "size": 26526,
+      "sha256": "b634ab5640e258563c536e658cad87080553df6f34f62269a21d554844e58bfe"
+    },
+    {
+      "file": "FFmpeg-LICENSE.md",
+      "size": 4368,
+      "sha256": "73d99bc83313fff665b426d6672b4e0479102bc402fe22314ac9ce94a38aa5ff"
+    },
+    {
+      "file": "FreeImage-FIPL.md",
+      "size": 17577,
+      "sha256": "0bb9a3123297c73ae6e19c70459fb0e58f313f67ca63176fd43f8e77668b8243"
+    },
+    {
+      "file": "FreeImage-GPL-2.md",
+      "size": 17878,
+      "sha256": "d51615a1a47f1ddbb027920d60d3fc30a00e1284c795a47857883e641349fadf"
+    },
+    {
+      "file": "FreeImage-GPL-3.md",
+      "size": 34801,
+      "sha256": "084be110e3e8757d8e6945cda1fbc7e5073bbe688dc19b92c0d8440155d8e282"
+    },
+    {
+      "file": "FreeType-FTL.md",
+      "size": 6743,
+      "sha256": "08c135755dd589039470f1fdbb400daaabaaa50d0b366d19cebff4d22986baa1"
+    },
+    {
+      "file": "FreeType-LICENSE.md",
+      "size": 2074,
+      "sha256": "2e3bbb7d7c5c396368dd0853a790ec29ce5b8647163dde42a0493fb0d6556b2b"
+    },
+    {
+      "file": "jemalloc-BUILD-INFO.md",
+      "size": 46,
+      "sha256": "5e7f821ab4eb804deb535baa7b41edca682d0303cf21a91908c98d5c9a7dcf4d"
+    },
+    {
+      "file": "jemalloc-CONTROL.md",
+      "size": 310,
+      "sha256": "053ff5624f6f592ac43fe4f785acd3c3dba546e9b304eb8a249962fa10e5c62c"
+    },
+    {
+      "file": "jemalloc-COPYRIGHT.md",
+      "size": 1736,
+      "sha256": "e1812a56f610d7d2fb42527fef8f7857927bc732a3476e8e1999c1f677f69518"
+    },
+    {
+      "file": "OpenVR-LICENSE.md",
+      "size": 1488,
+      "sha256": "f56ff606104d4ef18e617921a75c73ad73b5a1a1d70c69590c29de16919e04ad"
+    },
+    {
+      "file": "README.md",
+      "size": 4992,
+      "sha256": "c39a2edcd03d606a219787d65409da40614dac368e96f23251c425cb9356633f"
+    },
+    {
+      "file": "TBB-LICENSE.md",
+      "size": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "file": "TBB-NOTICE.md",
+      "size": 11631,
+      "sha256": "1634857eb058dce5278c57a832b8974190785145f4be9acdbdb511f3a0c4091c"
+    },
+    {
+      "file": "TBB-package-README.md",
+      "size": 3046,
+      "sha256": "b3979d3c2a8dca63a4750497cd35bc53a03e52524ea55caa1df7c646bf529a86"
+    }
+  ]
+}

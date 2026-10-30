@@ -24,6 +24,8 @@
 #include <vtkRenderWindowInteractor.h>
 #include <vtkSmartPointer.h>
 #include <functional>
+#include <stdexcept>
+#include "robot3d/rendering/WorkpieceSceneMath.h"
 namespace
 {
 class VtkRobotRenderSurface : public QVTKOpenGLNativeWidget
@@ -137,6 +139,26 @@ bool VtkRobotViewport::prepareModel(robot3d::domain::RobotConfigurationPtr c, st
     error = message.toStdString();
     return ok;
 }
+
+bool VtkRobotViewport::prepareWorkpieces(const robot3d::scene::RobotSceneSnapshot &s,std::string &error)
+{
+    if(!isRendererReady()){error="VTK viewport is not ready";return false;}
+    impl_->surface->makeCurrent();QString message;bool ok=false;
+    try {ok=impl_->renderer->prepareWorkpieces(s,message);}
+    catch(const std::exception &e){message=QString::fromUtf8(e.what());}
+    impl_->surface->doneCurrent();error=message.toStdString();return ok;
+}
+void VtkRobotViewport::focusWorkpiece(const QString &id)
+{
+    if(robot3d::rendering::workpieceqt::focus(scene_,id.toStdString(),false,double(width())/qMax(1,height()),camera_))
+    {QSignalBlocker block(zoomSlider);zoomSlider->setValue(40);requestRender();}
+}
+void VtkRobotViewport::fitAllWorkpieces()
+{
+    if(robot3d::rendering::workpieceqt::focus(scene_,std::string(),true,double(width())/qMax(1,height()),camera_))
+    {QSignalBlocker block(zoomSlider);zoomSlider->setValue(40);requestRender();}
+}
+
 void VtkRobotViewport::requestRender()
 {
     if (scheduled_)
@@ -157,7 +179,8 @@ void VtkRobotViewport::renderNow()
     impl_->surface->makeCurrent();
     if (dirty_)
     {
-        impl_->renderer->apply(scene_);
+        try {impl_->renderer->apply(scene_);}
+        catch(const std::exception &e){dirty_=false;rendering_=false;impl_->surface->doneCurrent();emit renderFailed(QString::fromUtf8(e.what()));return;}
         camera_.coordinateMatrix = impl_->renderer->coordinateMatrix();
         camera_.rotationCenter = install_ ? QVector3D() : impl_->renderer->rotationCenter();
         dirty_ = false;
@@ -201,17 +224,23 @@ bool VtkRobotViewport::eventFilter(QObject *target, QEvent *event)
     {
         auto *e = static_cast<QMouseEvent *>(event);
         curPos = QVector2D(e->localPos());
+        workpiecePressPoint_=e->localPos();workpieceDragged_=false;
         dragging_ = true;
         return true;
     }
     if (event->type() == QEvent::MouseButtonRelease)
     {
+        auto *e=static_cast<QMouseEvent*>(event);
+        if(dragging_&&!workpieceDragged_&&e->button()==Qt::LeftButton)
+            emit workpieceSelected(impl_->renderer->pickWorkpiece(camera_,impl_->surface->size(),e->localPos()));
         dragging_ = false;
         return true;
     }
     if (event->type() == QEvent::MouseMove && dragging_)
     {
-        const auto pos = QVector2D(static_cast<QMouseEvent *>(event)->localPos());
+        const auto point=static_cast<QMouseEvent*>(event)->localPos();
+        if(QVector2D(point-workpiecePressPoint_).length()>3)workpieceDragged_=true;
+        const auto pos = QVector2D(point);
         const auto diff = pos - curPos;
         curPos = pos;
         if (rotateTranslateStatus == 0)
@@ -292,6 +321,7 @@ void VtkRobotViewport::zoomChange_slot()
 }
 void VtkRobotViewport::Recovery3D_slot()
 {
+    camera_.focusOverride=false;
     camera_.rotation = QQuaternion();
     camera_.translation = install_ ? QVector3D(0, 0, 20) : QVector3D();
     camera_.scale = 1;

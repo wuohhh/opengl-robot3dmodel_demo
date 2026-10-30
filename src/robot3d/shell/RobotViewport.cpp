@@ -11,6 +11,7 @@ RobotViewport::RobotViewport(QWidget *parent)
     setObjectName("robotViewport");
     stack_->setMargin(0);
     stack_->addWidget(gl_);
+    connect(gl_, &OpenGlRobotViewport::workpieceSelected, this, [this](const QString &id){if(active_=="opengl"&&pending_.isEmpty())emit workpieceSelected(id);});
     connect(gl_, &OpenGlRobotViewport::rendererReady, this,
             [this]
             {
@@ -91,6 +92,7 @@ void RobotViewport::ensureVtk()
     // Apply visibility before the stacked layout measures the new viewport.
     vtk_->showState(model_);
     stack_->addWidget(vtk_);
+    connect(vtk_, &VtkRobotViewport::workpieceSelected, this, [this](const QString &id){if(active_=="vtk"&&pending_.isEmpty())emit workpieceSelected(id);});
     connect(vtk_, &VtkRobotViewport::rendererReady, this,
             [this]
             {
@@ -162,6 +164,30 @@ void RobotViewport::submitScene(const robot3d::scene::RobotSceneSnapshot &scene)
 #endif
         gl_->submitScene(scene);
 }
+
+bool RobotViewport::prepareWorkpieces(const robot3d::scene::RobotSceneSnapshot &scene,std::string &error)
+{
+    if(!pending_.isEmpty()){error="Renderer is switching; please retry";return false;}
+#ifdef ROBOT3D_WITH_VTK
+    if(active_=="vtk")return vtk_->prepareWorkpieces(scene,error);
+#endif
+    return gl_->prepareWorkpieces(scene,error);
+}
+void RobotViewport::focusWorkpiece(const QString &id)
+{
+#ifdef ROBOT3D_WITH_VTK
+    if(active_=="vtk"){vtk_->focusWorkpiece(id);return;}
+#endif
+    gl_->focusWorkpiece(id);
+}
+void RobotViewport::fitAllWorkpieces()
+{
+#ifdef ROBOT3D_WITH_VTK
+    if(active_=="vtk"){vtk_->fitAllWorkpieces();return;}
+#endif
+    gl_->fitAllWorkpieces();
+}
+
 QImage RobotViewport::capture()
 {
 #ifdef ROBOT3D_WITH_VTK
@@ -270,6 +296,12 @@ void RobotViewport::finishSwitch()
         failSwitch(QString::fromStdString(error));
         return;
     }
+    bool workpiecesOk=false;
+#ifdef ROBOT3D_WITH_VTK
+    if(next=="vtk")workpiecesOk=vtk_->prepareWorkpieces(scene_,error);else
+#endif
+        workpiecesOk=gl_->prepareWorkpieces(scene_,error);
+    if(!workpiecesOk){failSwitch(QString::fromStdString(error));return;}
     candidatePrepared_ = true;
 #ifdef ROBOT3D_WITH_VTK
     if (next == "vtk")
